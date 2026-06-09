@@ -20,6 +20,7 @@ import json
 import subprocess
 import threading
 import time
+import urllib.error
 import urllib.request
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -30,7 +31,7 @@ CACHE_TTL = 180          # seconds between upstream polls
 RETRY_AFTER = 120        # backoff between failed upstream attempts (endpoint rate-limits hard)
 STALE_OK = 6 * 3600      # serve stale cache up to this age on upstream errors
 
-_cache = {"data": None, "fetched_at": 0.0, "attempted_at": 0.0}
+_cache = {"data": None, "fetched_at": 0.0, "attempted_at": 0.0, "cooldown_until": 0.0}
 _lock = threading.Lock()
 
 
@@ -106,6 +107,13 @@ def fetch_upstream() -> dict | None:
     try:
         with urllib.request.urlopen(req, timeout=15) as resp:
             raw = json.loads(resp.read())
+    except urllib.error.HTTPError as e:
+        # the endpoint rate-limits per hourly bucket; honor its retry-after
+        if e.code == 429:
+            ra = e.headers.get("retry-after", "")
+            if ra.isdigit():
+                _cache["cooldown_until"] = time.time() + int(ra)
+        return None
     except Exception:
         return None
     if "error" in raw:
@@ -120,7 +128,7 @@ def get_usage() -> dict:
         if _cache["data"] is not None and age < CACHE_TTL:
             return {"ok": True, "stale": False, "age": int(age), **_cache["data"]}
 
-        if now - _cache["attempted_at"] >= RETRY_AFTER:
+        if now - _cache["attempted_at"] >= RETRY_AFTER and now >= _cache["cooldown_until"]:
             _cache["attempted_at"] = now
             fresh = fetch_upstream()
             if fresh is not None:
