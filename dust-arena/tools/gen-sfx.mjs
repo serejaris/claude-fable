@@ -21,7 +21,7 @@ const SFX = [
   ['reload', 'Assault rifle reload: magazine release click, new magazine inserted with a snap, charging handle racked, mechanical, no voice', 2.0],
   ['step', 'One single quick footstep on dry sand and gravel, soft scuff, very short', 0.5],
   ['headshot', 'Sharp metallic ding of a bullet ricocheting off a steel helmet, short bright ping', 0.6],
-  ['hit', 'Short punchy digital hit marker tick, video game UI shot feedback, dry click', 0.3],
+  ['hit', 'Short punchy digital hit marker tick, video game UI shot feedback, dry click', 0.5],
   ['death', 'Body collapsing onto dusty ground with light tactical gear rattle, short heavy thud', 0.9],
   ['medkit', 'Bright positive healing pickup chime, video game item pickup, two ascending notes', 0.8],
 ];
