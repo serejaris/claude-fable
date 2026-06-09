@@ -9,6 +9,8 @@ Each experiment lives in its own subfolder; root is never a workdir.
 |---|------|
 | ✅ Always | Create a new subfolder per project before starting any work |
 | ✅ Always | Save the original user prompt in the task description when creating via Skill Manager |
+| ✅ Always | Mask secrets in all output and thinking — screen is shared during live sessions |
+| 🚫 Never | Print tokens, API keys, passwords, or secrets in full — use `sk-...****` / `ghp_****` form |
 | 🚫 Never | Create files directly in the repo root (except this CLAUDE.md) |
 | 🚫 Never | Mix experiments — one folder per concept/test |
 
