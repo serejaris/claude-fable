@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>арканоид 3д — тоннель</title>
+<meta name="description" content="3д арканоид: голова двигает перспективу (off-axis projection), рука двигает ракетку. webcam + mediapipe + three.js">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #06070d;
+    --ink: #e8ecf4;
+    --dim: #5a6478;
+    --acid: #c8ff3e;
+    --cyan: #3ee8ff;
+    --hot: #ff3e7a;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--ink); font-family: 'IBM Plex Mono', monospace; }
+  #game { position: fixed; inset: 0; display: block; }
+
+  /* ── HUD ─────────────────────────────── */
+  #hud { position: fixed; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: flex-start; padding: 18px 22px; pointer-events: none; z-index: 5; }
+  .hud-block { display: flex; flex-direction: column; gap: 4px; }
+  .hud-label { font-size: 10px; letter-spacing: 0.25em; color: var(--dim); text-transform: uppercase; }
+  #score { font-family: 'Unbounded', sans-serif; font-weight: 900; font-size: 28px; color: var(--acid); line-height: 1; text-shadow: 0 0 24px rgba(200,255,62,.35); }
+  #lives { display: flex; gap: 6px; margin-top: 2px; }
+  .life { width: 10px; height: 10px; border-radius: 50%; background: var(--hot); box-shadow: 0 0 10px var(--hot); transition: all .3s; }
+  .life.lost { background: transparent; box-shadow: none; border: 1px solid var(--dim); }
+  #track { text-align: right; font-size: 11px; color: var(--dim); line-height: 1.7; }
+  #track .on { color: var(--cyan); }
+
+  /* ── превью камеры ───────────────────── */
+  #preview { position: fixed; right: 18px; bottom: 18px; width: 168px; height: 126px; border: 1px solid #1d2333; border-radius: 4px; z-index: 5; opacity: .85; background: #000; }
+  #preview.hidden { display: none; }
+
+  /* ── оверлеи ─────────────────────────── */
+  .overlay { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; z-index: 10; background: radial-gradient(ellipse at 50% 60%, rgba(10,14,26,.88), rgba(4,5,10,.97)); backdrop-filter: blur(6px); transition: opacity .4s; }
+  .overlay.hidden { opacity: 0; pointer-events: none; }
+  .ovl-kicker { font-size: 11px; letter-spacing: .4em; color: var(--cyan); text-transform: uppercase; }
+  .ovl-title { font-family: 'Unbounded', sans-serif; font-weight: 900; font-size: clamp(34px, 7vw, 72px); line-height: .95; text-align: center; letter-spacing: -.01em; }
+  .ovl-title em { font-style: normal; color: var(--acid); text-shadow: 0 0 40px rgba(200,255,62,.4); }
+  .ovl-sub { max-width: 460px; text-align: center; font-size: 13px; line-height: 1.8; color: var(--dim); }
+  .ovl-sub b { color: var(--ink); font-weight: 500; }
+  .btn-row { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+  button.btn { font-family: 'Unbounded', sans-serif; font-weight: 700; font-size: 14px; padding: 16px 28px; cursor: pointer; border-radius: 2px; border: 1px solid var(--acid); background: var(--acid); color: #0a0d05; transition: all .15s; letter-spacing: .02em; }
+  button.btn:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(200,255,62,.35); }
+  button.btn.ghost { background: transparent; color: var(--ink); border-color: #2a3145; }
+  button.btn.ghost:hover { border-color: var(--cyan); color: var(--cyan); box-shadow: 0 8px 32px rgba(62,232,255,.2); }
+  #status { font-size: 12px; color: var(--cyan); min-height: 18px; letter-spacing: .05em; }
+  .hint { position: fixed; bottom: 20px; left: 22px; font-size: 11px; color: var(--dim); z-index: 5; letter-spacing: .05em; }
+  .flash { position: fixed; inset: 0; background: var(--hot); opacity: 0; pointer-events: none; z-index: 8; }
+  .flash.go { animation: fl .45s ease-out; }
+  @keyframes fl { 0% { opacity: .35; } 100% { opacity: 0; } }
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<video id="cam" playsinline style="display:none"></video>
+<canvas id="preview" class="hidden" width="336" height="252"></canvas>
+
+<div id="hud" style="display:none">
+  <div class="hud-block">
+    <div class="hud-label">счёт</div>
+    <div id="score">0</div>
+    <div id="lives"></div>
+  </div>
+  <div id="track" class="hud-block">
+    <div id="t-face">голова —</div>
+    <div id="t-hand">рука —</div>
+    <div id="t-fps"></div>
+  </div>
+</div>
+
+<div id="start" class="overlay">
+  <div class="ovl-kicker">off-axis projection // mediapipe</div>
+  <div class="ovl-title">арканоид<br><em>тоннель</em></div>
+  <div class="ovl-sub">
+    экран — окно в тоннель. двигаешь <b>головой</b> — перспектива едет за тобой.
+    двигаешь <b>рукой</b> перед камерой — едет ракетка.<br>
+    лучше всего в фуллскрине (клавиша <b>F</b>).
+  </div>
+  <div class="btn-row">
+    <button class="btn" id="btn-cam">камера: голова + рука</button>
+    <button class="btn ghost" id="btn-mouse">без камеры, мышкой</button>
+  </div>
+  <div id="status"></div>
+</div>
+
+<div id="end" class="overlay hidden">
+  <div class="ovl-kicker" id="end-kicker"></div>
+  <div class="ovl-title" id="end-title"></div>
+  <div class="ovl-sub" id="end-sub"></div>
+  <div class="btn-row"><button class="btn" id="btn-again">ещё раз</button></div>
+</div>
+
+<div class="hint">F — фуллскрин · пробел / клик — запуск шара</div>
+<div class="flash" id="flash"></div>
+
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+
+/* ════════════════════════════════════════════
+   константы мира
+   экран = окно: z=0, полуширина SW, полувысота SH=1
+   тоннель уходит в -z
+════════════════════════════════════════════ */
+const SH = 1;
+let SW = Math.max(innerWidth / innerHeight, 1.1);
+const DEPTH = 14;
+const BALL_R = 0.22;
+const PADDLE_Z = -1.3;
+const LOSE_Z = 0.6;
+
+/* ── состояние ── */
+const S = {
+  mode: null,            // 'cam' | 'mouse'
+  playing: false,
+  score: 0, lives: 3, level: 1,
+  ballStuck: true, stuckTimer: 0,
+  eye:    { x: 0, y: 0, z: 3.2 },   // сглаженная позиция глаз
+  eyeRaw: { x: 0, y: 0, z: 3.2 },
+  hand:   { x: 0, y: -0.3, ok: false },
+  faceOk: false,
+  speed: 7.5,
+};
+
+/* ════════════════════════════════════════════
+   three.js сцена
+════════════════════════════════════════════ */
+const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('game'), antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x06070d);
+scene.fog = new THREE.Fog(0x06070d, 6, DEPTH + 8);
+
+const camera = new THREE.PerspectiveCamera();
+camera.position.set(0, 0, 3.2);
+
+scene.add(new THREE.AmbientLight(0x8090b0, 0.55));
+const keyLight = new THREE.PointLight(0xffffff, 18, 30);
+keyLight.position.set(0, 1.5, -4);
+scene.add(keyLight);
+
+/* ── тоннель: сетка на стенах ── */
+let roomGroup = null;
+function buildRoom() {
+  if (roomGroup) { scene.remove(roomGroup); roomGroup.traverse(o => o.geometry?.dispose()); }
+  roomGroup = new THREE.Group();
+  const pts = [];
+  const step = 1;
+  // кольца по глубине
+  for (let z = 0; z >= -DEPTH; z -= step) {
+    pts.push(-SW, -SH, z,  SW, -SH, z);
+    pts.push(-SW,  SH, z,  SW,  SH, z);
+    pts.push(-SW, -SH, z, -SW,  SH, z);
+    pts.push( SW, -SH, z,  SW,  SH, z);
+  }
+  // продольные линии
+  const nx = 8, ny = 5;
+  for (let i = 0; i <= nx; i++) {
+    const x = -SW + (2 * SW * i) / nx;
+    pts.push(x, -SH, 0, x, -SH, -DEPTH);
+    pts.push(x,  SH, 0, x,  SH, -DEPTH);
+  }
+  for (let i = 0; i <= ny; i++) {
+    const y = -SH + (2 * SH * i) / ny;
+    pts.push(-SW, y, 0, -SW, y, -DEPTH);
+    pts.push( SW, y, 0,  SW, y, -DEPTH);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+  roomGroup.add(new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: 0x223052, transparent: true, opacity: 0.85 })));
+
+  // задняя стена
+  const back = new THREE.Mesh(
+    new THREE.PlaneGeometry(2 * SW, 2 * SH),
+    new THREE.MeshBasicMaterial({ color: 0x0a0e1c })
+  );
+  back.position.z = -DEPTH - 0.01;
+  roomGroup.add(back);
+
+  // акцентное кольцо у входа в тоннель
+  const ringG = new THREE.BufferGeometry();
+  ringG.setAttribute('position', new THREE.Float32BufferAttribute([
+    -SW, -SH, -0.02,  SW, -SH, -0.02,   SW, -SH, -0.02,  SW, SH, -0.02,
+     SW,  SH, -0.02, -SW,  SH, -0.02,  -SW,  SH, -0.02, -SW, -SH, -0.02,
+  ], 3));
+  roomGroup.add(new THREE.LineSegments(ringG, new THREE.LineBasicMaterial({ color: 0x3ee8ff, transparent: true, opacity: 0.9 })));
+  scene.add(roomGroup);
+}
+buildRoom();
+
+/* ── ракетка ── */
+const PW = 1.15, PH = 0.82;
+const paddle = new THREE.Group();
+{
+  const plate = new THREE.Mesh(
+    new THREE.BoxGeometry(PW, PH, 0.08),
+    new THREE.MeshBasicMaterial({ color: 0x3ee8ff, transparent: true, opacity: 0.13, depthWrite: false })
+  );
+  const edges = new THREE.LineSegments(
+    new THREE.EdgesGeometry(plate.geometry),
+    new THREE.LineBasicMaterial({ color: 0x3ee8ff })
+  );
+  const cross = new THREE.BufferGeometry();
+  cross.setAttribute('position', new THREE.Float32BufferAttribute([
+    -0.1, 0, 0.05, 0.1, 0, 0.05,  0, -0.1, 0.05, 0, 0.1, 0.05
+  ], 3));
+  paddle.add(plate, edges, new THREE.LineSegments(cross, new THREE.LineBasicMaterial({ color: 0xc8ff3e })));
+  paddle.position.set(0, 0, PADDLE_Z);
+  scene.add(paddle);
+}
+
+/* ── шар ── */
+const ball = new THREE.Mesh(
+  new THREE.SphereGeometry(BALL_R, 24, 24),
+  new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xc8ff3e, emissiveIntensity: 1.4, roughness: 0.3 })
+);
+const ballLight = new THREE.PointLight(0xc8ff3e, 6, 8);
+ball.add(ballLight);
+scene.add(ball);
+const vel = new THREE.Vector3();
+
+// тень-маркер шара на нижней стене (важный depth cue)
+const marker = new THREE.Mesh(
+  new THREE.CircleGeometry(0.16, 20),
+  new THREE.MeshBasicMaterial({ color: 0xc8ff3e, transparent: true, opacity: 0.25, depthWrite: false })
+);
+marker.rotation.x = -Math.PI / 2;
+scene.add(marker);
+
+/* ── кирпичи ── */
+let bricks = [];
+let dying = [];
+const brickColors = [0xff3e7a, 0xff8a3e, 0xc8ff3e, 0x3ee8ff];
+function buildBricks() {
+  bricks.forEach(b => { scene.remove(b); b.geometry.dispose(); });
+  bricks = [];
+  const cols = 6, rows = 4, layers = 2;
+  const fieldW = Math.min(SW * 0.85, 1.5) * 2;
+  const fieldH = 1.55;
+  const bw = fieldW / cols * 0.8, bh = fieldH / rows * 0.72, bd = 0.55;
+  for (let l = 0; l < layers; l++)
+    for (let r = 0; r < rows; r++)
+      for (let c = 0; c < cols; c++) {
+        const m = new THREE.Mesh(
+          new THREE.BoxGeometry(bw, bh, bd),
+          new THREE.MeshStandardMaterial({ color: brickColors[r % 4], roughness: 0.4, metalness: 0.1, emissive: brickColors[r % 4], emissiveIntensity: 0.18 })
+        );
+        m.position.set(
+          -fieldW / 2 + (c + 0.5) * (fieldW / cols),
+          -fieldH / 2 + (r + 0.5) * (fieldH / rows),
+          -DEPTH + 1.2 + l * 1.3
+        );
+        m.userData = { w: bw, h: bh, d: bd };
+        scene.add(m);
+        bricks.push(m);
+      }
+}
+
+/* ════════════════════════════════════════════
+   off-axis projection (generalized perspective)
+   экран фиксирован в мире, глаз ездит — фрустум
+   пересчитывается асимметрично каждый кадр
+════════════════════════════════════════════ */
+function updateProjection() {
+  const n = 0.1, f = 100;
+  const ez = Math.max(S.eye.z, 0.8);
+  camera.position.set(S.eye.x, S.eye.y, ez);
+  camera.rotation.set(0, 0, 0);
+  const k = n / ez;
+  camera.projectionMatrix.makePerspective(
+    (-SW - S.eye.x) * k, ( SW - S.eye.x) * k,
+    ( SH - S.eye.y) * k, (-SH - S.eye.y) * k,
+    n, f
+  );
+  camera.projectionMatrixInverse.copy(camera.projectionMatrix).invert();
+}
+
+/* ════════════════════════════════════════════
+   игра
+════════════════════════════════════════════ */
+const $ = id => document.getElementById(id);
+function setLives() {
+  $('lives').innerHTML = '';
+  for (let i = 0; i < 3; i++) {
+    const d = document.createElement('div');
+    d.className = 'life' + (i < S.lives ? '' : ' lost');
+    $('lives').appendChild(d);
+  }
+}
+function resetBall() {
+  S.ballStuck = true;
+  S.stuckTimer = 0;
+}
+function launchBall() {
+  if (!S.ballStuck) return;
+  S.ballStuck = false;
+  const a = (Math.random() - 0.5) * 0.6;
+  vel.set(Math.sin(a) * 2, (Math.random() - 0.5) * 1.5, -S.speed).setLength(S.speed);
+}
+function startGame() {
+  S.score = 0; S.lives = 3; S.level = 1; S.speed = 7.5;
+  $('score').textContent = '0';
+  setLives();
+  buildBricks();
+  resetBall();
+  S.playing = true;
+  $('end').classList.add('hidden');
+  $('hud').style.display = 'flex';
+}
+function gameOver(win) {
+  S.playing = false;
+  $('end-kicker').textContent = win ? 'уровень пройден' : 'game over';
+  $('end-title').innerHTML = win ? 'ты <em>прошёл</em>' : 'тоннель <em>съел</em> шар';
+  $('end-sub').innerHTML = `счёт: <b>${S.score}</b>`;
+  $('end').classList.remove('hidden');
+}
+function nextLevel() {
+  S.level++;
+  S.speed += 1.3;
+  buildBricks();
+  resetBall();
+}
+
+function physics(dt) {
+  // ракетка едет к цели
+  const tx = THREE.MathUtils.clamp(S.hand.x, -SW + PW / 2, SW - PW / 2);
+  const ty = THREE.MathUtils.clamp(S.hand.y, -SH + PH / 2, SH - PH / 2);
+  paddle.position.x += (tx - paddle.position.x) * Math.min(1, dt * 14);
+  paddle.position.y += (ty - paddle.position.y) * Math.min(1, dt * 14);
+  paddle.rotation.y = (tx - paddle.position.x) * 0.6;
+  paddle.rotation.x = -(ty - paddle.position.y) * 0.6;
+
+  if (S.ballStuck) {
+    S.stuckTimer += dt;
+    ball.position.set(paddle.position.x, paddle.position.y, PADDLE_Z - 0.45);
+    if (S.stuckTimer > 1.6) launchBall();
+  } else {
+    // сабстепы чтобы не пролетать сквозь кирпичи
+    const steps = Math.ceil((vel.length() * dt) / (BALL_R * 0.8));
+    const sdt = dt / steps;
+    // стоп если шар прилип (потеря/новый уровень) или игра кончилась —
+    // иначе за один кадр можно снять несколько жизней
+    for (let i = 0; i < steps; i++) { stepBall(sdt); if (S.ballStuck || !S.playing) break; }
+  }
+  marker.position.set(ball.position.x, -SH + 0.005, ball.position.z);
+
+  // анимация умирающих кирпичей
+  for (let i = dying.length - 1; i >= 0; i--) {
+    const b = dying[i];
+    b.scale.multiplyScalar(1 - dt * 9);
+    b.material.opacity = Math.max(0, b.material.opacity - dt * 4);
+    if (b.scale.x < 0.05) { scene.remove(b); b.geometry.dispose(); dying.splice(i, 1); }
+  }
+}
+
+function stepBall(dt) {
+  ball.position.addScaledVector(vel, dt);
+  const p = ball.position;
+
+  // стены
+  if (p.x < -SW + BALL_R) { p.x = -SW + BALL_R; vel.x = Math.abs(vel.x); }
+  if (p.x >  SW - BALL_R) { p.x =  SW - BALL_R; vel.x = -Math.abs(vel.x); }
+  if (p.y < -SH + BALL_R) { p.y = -SH + BALL_R; vel.y = Math.abs(vel.y); }
+  if (p.y >  SH - BALL_R) { p.y =  SH - BALL_R; vel.y = -Math.abs(vel.y); }
+  if (p.z < -DEPTH + BALL_R) { p.z = -DEPTH + BALL_R; vel.z = Math.abs(vel.z); }
+
+  // ракетка
+  if (vel.z > 0 && p.z > PADDLE_Z - BALL_R && p.z < PADDLE_Z + 0.25) {
+    const dx = p.x - paddle.position.x, dy = p.y - paddle.position.y;
+    if (Math.abs(dx) < PW / 2 + BALL_R && Math.abs(dy) < PH / 2 + BALL_R) {
+      p.z = PADDLE_Z - BALL_R;
+      vel.z = -Math.abs(vel.z);
+      vel.x += dx * 3.2;
+      vel.y += dy * 3.2;
+      vel.setLength(S.speed);
+      pulsePaddle();
+    }
+  }
+
+  // проиграл
+  if (p.z > LOSE_Z) {
+    S.lives--;
+    vel.set(0, 0, 0);
+    setLives();
+    $('flash').classList.remove('go'); void $('flash').offsetWidth; $('flash').classList.add('go');
+    if (S.lives <= 0) { gameOver(false); } else resetBall();
+    return;
+  }
+
+  // кирпичи
+  for (let i = bricks.length - 1; i >= 0; i--) {
+    const b = bricks[i], u = b.userData;
+    const dx = p.x - b.position.x, dy = p.y - b.position.y, dz = p.z - b.position.z;
+    const ox = u.w / 2 + BALL_R - Math.abs(dx);
+    const oy = u.h / 2 + BALL_R - Math.abs(dy);
+    const oz = u.d / 2 + BALL_R - Math.abs(dz);
+    if (ox > 0 && oy > 0 && oz > 0) {
+      if (oz <= ox && oz <= oy) vel.z = Math.sign(dz) * Math.abs(vel.z);
+      else if (ox <= oy)        vel.x = Math.sign(dx) * Math.abs(vel.x);
+      else                      vel.y = Math.sign(dy) * Math.abs(vel.y);
+      b.material.transparent = true;
+      bricks.splice(i, 1);
+      dying.push(b);
+      S.score += 10 * S.level;
+      $('score').textContent = S.score;
+      if (bricks.length === 0) nextLevel();
+      break;
+    }
+  }
+}
+
+let paddlePulse = 0;
+function pulsePaddle() { paddlePulse = 1; }
+
+/* ════════════════════════════════════════════
+   трекинг: mediapipe hand + face
+════════════════════════════════════════════ */
+const video = $('cam');
+const pv = $('preview'), pvCtx = pv.getContext('2d');
+let handLM = null, faceLM = null;
+let lastVideoT = -1, frameFlip = false;
+
+async function initTracking() {
+  const st = $('status');
+  st.textContent = 'грузим модели…';
+  const { FilesetResolver, HandLandmarker, FaceLandmarker } =
+    await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14');
+  const vision = await FilesetResolver.forVisionTasks(
+    'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm');
+  [handLM, faceLM] = await Promise.all([
+    HandLandmarker.createFromOptions(vision, {
+      baseOptions: { modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task', delegate: 'GPU' },
+      runningMode: 'VIDEO', numHands: 1,
+    }),
+    FaceLandmarker.createFromOptions(vision, {
+      baseOptions: { modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task', delegate: 'GPU' },
+      runningMode: 'VIDEO', numFaces: 1,
+    }),
+  ]);
+  st.textContent = 'включаем камеру…';
+  const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
+  video.srcObject = stream;
+  await video.play();
+  pv.classList.remove('hidden');
+}
+
+let pvFace = null, pvHand = null;
+function trackFrame() {
+  if (!handLM || video.currentTime === lastVideoT) return;
+  lastVideoT = video.currentTime;
+  const t = performance.now();
+  frameFlip = !frameFlip;
+
+  // рука — каждый кадр
+  const hr = handLM.detectForVideo(video, t);
+  if (hr.landmarks?.length) {
+    const lm = hr.landmarks[0][9]; // центр ладони
+    const hx = 1 - lm.x;           // зеркалим
+    S.hand.x = (hx - 0.5) * 2 * SW * 1.5;
+    S.hand.y = (0.5 - lm.y) * 2 * SH * 1.7;
+    S.hand.ok = true;
+    pvHand = { x: hx, y: lm.y };
+  } else { S.hand.ok = false; pvHand = null; }
+
+  // лицо — через кадр (экономим)
+  if (frameFlip) {
+    const fr = faceLM.detectForVideo(video, t);
+    if (fr.faceLandmarks?.length) {
+      const f = fr.faceLandmarks[0];
+      const L = f[33], R = f[263]; // внешние уголки глаз
+      const cx = 1 - (L.x + R.x) / 2;
+      const cy = (L.y + R.y) / 2;
+      const ipd = Math.hypot(L.x - R.x, L.y - R.y);
+      S.eyeRaw.x = (cx - 0.5) * SW * 4.2;
+      S.eyeRaw.y = (0.5 - cy) * SH * 3.4;
+      S.eyeRaw.z = THREE.MathUtils.clamp(0.21 / Math.max(ipd, 0.02), 1.4, 6.5);
+      S.faceOk = true;
+      pvFace = { x: cx, y: cy };
+    } else { S.faceOk = false; pvFace = null; }
+  }
+
+  // мини-превью
+  pvCtx.save();
+  pvCtx.scale(-1, 1);
+  pvCtx.drawImage(video, -pv.width, 0, pv.width, pv.height);
+  pvCtx.restore();
+  if (pvFace) {
+    pvCtx.strokeStyle = '#3ee8ff'; pvCtx.lineWidth = 2;
+    pvCtx.beginPath(); pvCtx.arc(pvFace.x * pv.width, pvFace.y * pv.height, 10, 0, 7); pvCtx.stroke();
+  }
+  if (pvHand) {
+    pvCtx.fillStyle = '#c8ff3e';
+    pvCtx.beginPath(); pvCtx.arc(pvHand.x * pv.width, pvHand.y * pv.height, 7, 0, 7); pvCtx.fill();
+  }
+  $('t-face').innerHTML = S.faceOk ? '<span class="on">голова ✓</span>' : 'голова —';
+  $('t-hand').innerHTML = S.hand.ok ? '<span class="on">рука ✓</span>' : 'рука —';
+}
+
+/* ════════════════════════════════════════════
+   главный цикл
+════════════════════════════════════════════ */
+let prevT = performance.now(), fpsAcc = 0, fpsN = 0, fpsT = 0;
+function loop(now) {
+  requestAnimationFrame(loop);
+  const dt = Math.min((now - prevT) / 1000, 0.05);
+  prevT = now;
+
+  if (S.mode === 'cam') trackFrame();
+
+  // сглаживаем глаз
+  const ke = 1 - Math.pow(0.0008, dt); // ~плавный lerp
+  S.eye.x += (S.eyeRaw.x - S.eye.x) * ke;
+  S.eye.y += (S.eyeRaw.y - S.eye.y) * ke;
+  S.eye.z += (S.eyeRaw.z - S.eye.z) * ke;
+  updateProjection();
+
+  if (S.playing) physics(dt);
+
+  // пульс ракетки
+  if (paddlePulse > 0) {
+    paddlePulse = Math.max(0, paddlePulse - dt * 4);
+    paddle.scale.setScalar(1 + paddlePulse * 0.12);
+  }
+
+  renderer.render(scene, camera);
+
+  fpsAcc += dt; fpsN++;
+  if ((fpsT += dt) > 0.5) { $('t-fps').textContent = Math.round(fpsN / fpsAcc) + ' fps'; fpsAcc = 0; fpsN = 0; fpsT = 0; }
+}
+requestAnimationFrame(loop);
+
+/* ════════════════════════════════════════════
+   ui
+════════════════════════════════════════════ */
+$('btn-cam').onclick = async () => {
+  try {
+    await initTracking();
+    S.mode = 'cam';
+    $('start').classList.add('hidden');
+    startGame();
+  } catch (e) {
+    $('status').textContent = 'не вышло: ' + e.message + ' — попробуй мышкой';
+    console.error(e);
+  }
+};
+$('btn-mouse').onclick = () => {
+  S.mode = 'mouse';
+  $('start').classList.add('hidden');
+  startGame();
+};
+$('btn-again').onclick = () => startGame();
+
+addEventListener('pointermove', e => {
+  if (S.mode !== 'mouse') return;
+  S.hand.x = (e.clientX / innerWidth - 0.5) * 2 * SW;
+  S.hand.y = (0.5 - e.clientY / innerHeight) * 2 * SH;
+  // лёгкий параллакс от мышки, чтобы off-axis было видно и без камеры
+  S.eyeRaw.x = (e.clientX / innerWidth - 0.5) * 1.4;
+  S.eyeRaw.y = (0.5 - e.clientY / innerHeight) * 1.0;
+});
+addEventListener('pointerdown', () => { if (S.playing) launchBall(); });
+addEventListener('keydown', e => {
+  if (e.code === 'Space') { e.preventDefault(); if (S.playing) launchBall(); }
+  if (e.code === 'KeyF') document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
+});
+addEventListener('resize', () => {
+  renderer.setSize(innerWidth, innerHeight);
+  SW = Math.max(innerWidth / innerHeight, 1.1);
+  buildRoom();
+});
+</script>
+</body>
+</html>
