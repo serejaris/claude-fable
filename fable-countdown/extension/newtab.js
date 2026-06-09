@@ -135,6 +135,47 @@ function renderWords() {
   $("nudge").textContent = NUDGES[Math.floor(Math.random() * NUDGES.length)];
 }
 
+// — usage limits via local helper (helper/usage_server.py) —
+const USAGE_URL = "http://127.0.0.1:46123/usage";
+
+function fmtReset(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d)) return "";
+  const sameDay = d.toDateString() === new Date().toDateString();
+  const hm = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return sameDay ? `сброс ${hm}` : `сброс ${pad(d.getDate())}.${pad(d.getMonth() + 1)} ${hm}`;
+}
+
+function renderLimitRow(id, win) {
+  const row = $(id);
+  if (!win || typeof win.pct !== "number") {
+    row.style.display = "none";
+    return false;
+  }
+  row.style.display = "";
+  row.classList.toggle("hot", win.pct >= 85);
+  row.classList.toggle("warm", win.pct >= 60 && win.pct < 85);
+  row.querySelector(".limit-fill").style.width = win.pct + "%";
+  row.querySelector(".limit-pct").textContent = Math.round(win.pct) + "%";
+  row.querySelector(".limit-reset").textContent = fmtReset(win.resets_at);
+  return true;
+}
+
+async function renderLimits() {
+  try {
+    const resp = await fetch(USAGE_URL, { signal: AbortSignal.timeout(3000) });
+    const data = await resp.json();
+    if (!data.ok) throw new Error("helper has no data");
+    const any =
+      renderLimitRow("limitSession", data.session) |
+      renderLimitRow("limitWeek", data.week);
+    $("limits").hidden = !any;
+  } catch {
+    $("limits").hidden = true; // helper not running — degrade silently
+  }
+}
+
 function renderAfter() {
   document.body.classList.add("after");
   $("overline").textContent = "время вышло";
@@ -176,8 +217,10 @@ $("counter").addEventListener("click", () => {
 
 renderWords();
 renderEmbers();
+renderLimits();
 tick();
 if (remaining() > 0) {
   timer = setInterval(tick, 250);
   setInterval(renderEmbers, 60000);
+  setInterval(renderLimits, 120000);
 }

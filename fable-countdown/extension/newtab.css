@@ -94,6 +94,49 @@ body {
 
 .deadline-date { color: var(--bone); }
 
+/* ——— usage limits HUD ——— */
+
+.frame-top-right {
+  display: flex; flex-direction: column; align-items: flex-end; gap: 14px;
+}
+
+.limits {
+  display: flex; flex-direction: column; gap: 8px;
+  animation: rise .9s cubic-bezier(.2,.7,.2,1) .3s both;
+}
+.limits[hidden] { display: none; }
+
+.limit-row {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 10px;
+  letter-spacing: .14em;
+}
+
+.limit-label { color: var(--ash); min-width: 64px; text-align: right; }
+
+.limit-bar {
+  position: relative;
+  width: 110px; height: 3px;
+  background: rgba(233, 225, 210, .1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.limit-fill {
+  position: absolute; inset: 0 auto 0 0;
+  width: 0%;
+  background: var(--bone-dim);
+  border-radius: 2px;
+  transition: width .8s cubic-bezier(.2,.7,.2,1);
+}
+.limit-row.warm .limit-fill { background: var(--ember); box-shadow: 0 0 6px rgba(255,166,77,.5); }
+.limit-row.hot  .limit-fill { background: var(--ember-hot); box-shadow: 0 0 8px rgba(255,122,61,.7); }
+
+.limit-pct { color: var(--bone-dim); min-width: 34px; font-variant-numeric: tabular-nums; }
+.limit-row.warm .limit-pct { color: var(--ember); }
+.limit-row.hot  .limit-pct { color: var(--ember-hot); }
+
+.limit-reset { color: var(--ash); font-variant-numeric: tabular-nums; }
+
 /* ——— stage ——— */
 
 .stage {

@@ -6,6 +6,7 @@
   "chrome_url_overrides": {
     "newtab": "newtab.html"
   },
+  "host_permissions": ["http://127.0.0.1:46123/*"],
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
