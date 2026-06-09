@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Majesty Clone — Indirect Control Kingdom Sim</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Alegreya:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>👑</text></svg>">
+</head>
+<body>
+  <div id="stage">
+    <canvas id="terrain"></canvas>
+    <canvas id="entities"></canvas>
+    <canvas id="effects"></canvas>
+  </div>
+
+  <div id="overlay">
+    <header id="topbar">
+      <div class="tb-group brand"><span class="crown">👑</span> <span class="title">Majesty<span class="thin">·clone</span></span></div>
+      <div class="tb-group"><span class="coin">●</span> <b id="gold">0</b><span class="unit">g</span></div>
+      <div class="tb-group" id="day">Day 1 · 00:00</div>
+      <div class="tb-group" id="pop">0 heroes</div>
+      <div class="tb-group speeds">
+        <button class="speed-btn" data-speed="0" title="Pause (Space)">⏸</button>
+        <button class="speed-btn active" data-speed="1" title="Normal (1)">▶</button>
+        <button class="speed-btn" data-speed="2" title="Fast (2)">▶▶</button>
+        <button class="speed-btn" data-speed="4" title="Very fast (3)">▶▶▶</button>
+      </div>
+      <div class="tb-group right">
+        <button id="btn-save" class="tb-btn" title="Save">💾</button>
+        <button id="btn-new" class="tb-btn" title="New kingdom">⟳</button>
+        <button id="btn-help" class="tb-btn" title="How to play">?</button>
+      </div>
+    </header>
+
+    <aside id="sidebar">
+      <div class="side-title">Royal Works</div>
+      <div id="build-menu"></div>
+      <div class="side-title">Decrees</div>
+      <div id="flag-menu">
+        <button id="flag-attack" class="build-btn flag-a"><span class="b-name">⚑ Attack Bounty</span><span class="b-cost">20g+</span></button>
+        <button id="flag-explore" class="build-btn flag-e"><span class="b-name">⚑ Explore Bounty</span><span class="b-cost">20g+</span></button>
+      </div>
+    </aside>
+
+    <aside id="panel" class="hidden"></aside>
+    <div id="ticker"></div>
+    <div id="modal" class="hidden"></div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
