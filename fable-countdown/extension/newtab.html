@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>до 22 июня</title>
+  <link rel="stylesheet" href="newtab.css">
+</head>
+<body>
+  <div class="vignette" aria-hidden="true"></div>
+  <div class="grain" aria-hidden="true"></div>
+
+  <div class="lifeline" aria-hidden="true">
+    <div class="lifeline-fill" id="lifeline"></div>
+  </div>
+
+  <header class="frame-top">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="brand-name">FABLE&nbsp;5</span>
+      <span class="brand-sub">claude-fable-5</span>
+    </div>
+    <div class="deadline-mark">до&nbsp;полуночи <span class="deadline-date">22.VI.2026</span></div>
+  </header>
+
+  <main class="stage">
+    <p class="overline" id="overline">осталось</p>
+
+    <button class="counter" id="counter" title="нажми — сменить единицу времени">
+      <span class="counter-value" id="counterValue"></span>
+      <span class="counter-unit" id="counterUnit"></span>
+    </button>
+
+    <p class="clock" id="clock" aria-live="off"></p>
+
+    <section class="embers" aria-label="оставшиеся часы">
+      <p class="embers-caption"><span id="embersLeft"></span> — каждая точка — один час с&nbsp;ней</p>
+      <div class="embers-grid" id="embersGrid"></div>
+    </section>
+  </main>
+
+  <footer class="frame-bottom">
+    <p class="epigraph" id="epigraph"></p>
+    <p class="nudge" id="nudge"></p>
+  </footer>
+
+  <script src="newtab.js"></script>
+</body>
+</html>
