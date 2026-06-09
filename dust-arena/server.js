@@ -26,9 +26,24 @@ const SPAWNS = [
 ];
 
 const app = express();
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(require('compression')());
+app.use(express.static(path.join(__dirname, 'public'), {
+  setHeaders(res, file) {
+    if (file.endsWith('.mp3') || file.endsWith('.svg')) res.setHeader('Cache-Control', 'public, max-age=86400');
+    else res.setHeader('Cache-Control', 'no-cache');
+  },
+}));
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
+
+// drop dead sockets so ghost players don't linger in rooms
+setInterval(() => {
+  for (const ws of wss.clients) {
+    if (ws.isAlive === false) { ws.terminate(); continue; }
+    ws.isAlive = false;
+    ws.ping();
+  }
+}, 30000);
 
 const rooms = new Map(); // name -> Room
 let nextId = 1;
@@ -83,10 +98,14 @@ function publicPlayer(p) {
 wss.on('connection', (ws) => {
   let player = null;
   let room = null;
+  ws.isAlive = true;
+  ws.on('pong', () => { ws.isAlive = true; });
 
   ws.on('message', (raw) => {
     let msg;
     try { msg = JSON.parse(raw); } catch { return; }
+
+    if (msg.t === 'ping') { ws.send(JSON.stringify({ t: 'pong', ts: msg.ts })); return; }
 
     if (msg.t === 'join' && !player) {
       const roomName = String(msg.room || 'dust').slice(0, 24).replace(/[^\w-]/g, '') || 'dust';

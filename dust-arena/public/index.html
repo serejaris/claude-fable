@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <title>DUST ARENA</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { height: 100%; overflow: hidden; background: #000; font-family: 'Courier New', monospace; }
@@ -20,6 +21,7 @@
   #healflash { inset: 0; background: radial-gradient(ellipse at center, transparent 40%, rgba(40,255,120,.35)); opacity: 0; transition: opacity .4s; }
   #deathveil { inset: 0; background: radial-gradient(ellipse at center, rgba(80,0,0,.25), rgba(60,0,0,.55)); opacity: 0; transition: opacity .5s; }
   #hitmark { top: 50%; left: 50%; transform: translate(-50%,-50%) rotate(45deg); color: #ff5544; font-size: 30px; font-weight: bold; opacity: 0; }
+  #ping { top: 14px; left: 18px; font-size: 13px; color: #8a8060; }
   #scoreboard { top: 50%; left: 50%; transform: translate(-50%,-50%); background: rgba(10,10,5,.85); padding: 18px 28px; border: 1px solid #5a5238; min-width: 360px; display: none; font-size: 15px; }
   #scoreboard table { width: 100%; border-collapse: collapse; }
   #scoreboard td, #scoreboard th { padding: 4px 10px; text-align: left; }
@@ -46,6 +48,7 @@
 <div class="hud" id="healflash"></div>
 <div class="hud" id="deathveil"></div>
 <div class="hud" id="hitmark">+</div>
+<div class="hud" id="ping"></div>
 <div class="hud" id="scoreboard"></div>
 <div id="join">
   <div class="box">
@@ -54,7 +57,7 @@
     <input id="nick" maxlength="16" placeholder="nickname">
     <input id="room" maxlength="24" placeholder="room (default: dust)">
     <button id="go">ENTER →</button>
-    <div class="hint">WASD move &middot; SPACE jump &middot; SHIFT walk<br>LMB shoot &middot; R reload &middot; TAB scoreboard<br>1-4 taunts (EZ / NICE SHOT / RUSH B / HELP!)</div>
+    <div class="hint">WASD move &middot; SPACE jump &middot; SHIFT walk<br>LMB shoot &middot; R reload &middot; TAB scoreboard &middot; M mute<br>1-4 taunts (EZ / NICE SHOT / RUSH B / HELP!)</div>
   </div>
 </div>
 <script type="importmap">
@@ -146,6 +149,7 @@ addEventListener('keydown', e => {
   if (e.code === 'Space') e.preventDefault();
   if (e.code === 'Tab') { e.preventDefault(); sb.style.display = 'block'; }
   if (e.code === 'KeyR') reload();
+  if (e.code === 'KeyM') toggleMute();
   if (/^Digit[1-4]$/.test(e.code) && document.pointerLockElement) taunt(+e.code[5] - 1);
 });
 addEventListener('keyup', e => { keys[e.code] = false; if (e.code === 'Tab') sb.style.display = 'none'; });
@@ -280,6 +284,10 @@ function reviveRemote(r) {
 const MEDKITS = [[0, -2], [8, -15], [-50, -44], [52, -31], [62, -8], [-59.5, 35]]; // [x, z, y?] — must match server
 const medkitMeshes = [];
 function buildMedkits(states) {
+  if (medkitMeshes.length) { // reconnect: just sync visibility
+    states.forEach((s, i) => { if (medkitMeshes[i]) medkitMeshes[i].visible = s !== 0; });
+    return;
+  }
   MEDKITS.forEach(([x, z, y], i) => {
     const g = new THREE.Group();
     const base = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.4, 0.9), new THREE.MeshLambertMaterial({ color: 0xf2f2f2 }));
@@ -298,20 +306,53 @@ function buildMedkits(states) {
 
 // ---------- audio ----------
 const AC = new (window.AudioContext || window.webkitAudioContext)();
+const master = AC.createGain();
+master.connect(AC.destination);
+let muted = false;
+function toggleMute() {
+  muted = !muted;
+  master.gain.value = muted ? 0 : 1;
+  showMsg(muted ? 'SOUND OFF' : 'SOUND ON', 900);
+}
+// ElevenLabs-generated SFX; procedural synthesis stays as fallback when a file is missing
+const SFX = {};
+const SFX_NAMES = ['shot', 'reload', 'step', 'headshot', 'hit', 'death', 'medkit', 'onfire', 'rampage', 'godlike', 'unstoppable', 'roundstart', 'roundover'];
+for (const n of SFX_NAMES) {
+  fetch('sfx/' + n + '.mp3')
+    .then(r => r.ok ? r.arrayBuffer() : Promise.reject())
+    .then(b => AC.decodeAudioData(b))
+    .then(buf => SFX[n] = buf)
+    .catch(() => {});
+}
+function play(name, vol = 1, pan = 0, rate = 1) {
+  const buf = SFX[name];
+  if (!buf) return false;
+  const src = AC.createBufferSource();
+  src.buffer = buf; src.playbackRate.value = rate;
+  const g = AC.createGain(); g.gain.value = vol;
+  src.connect(g);
+  if (pan && AC.createStereoPanner) {
+    const p = AC.createStereoPanner(); p.pan.value = pan;
+    g.connect(p).connect(master);
+  } else g.connect(master);
+  src.start();
+  return true;
+}
 function blip() {
   const t = AC.currentTime;
   const o = AC.createOscillator(); o.type = 'square'; o.frequency.value = 1150;
   const g = AC.createGain(); g.gain.setValueAtTime(0.06, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.07);
-  o.connect(g).connect(AC.destination); o.start(); o.stop(t + 0.08);
+  o.connect(g).connect(master); o.start(); o.stop(t + 0.08);
 }
 function healSound() {
   const t = AC.currentTime;
   const o = AC.createOscillator(); o.type = 'sine';
   o.frequency.setValueAtTime(500, t); o.frequency.linearRampToValueAtTime(950, t + 0.18);
   const g = AC.createGain(); g.gain.setValueAtTime(0.12, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
-  o.connect(g).connect(AC.destination); o.start(); o.stop(t + 0.3);
+  o.connect(g).connect(master); o.start(); o.stop(t + 0.3);
 }
 function shotSound(vol = 0.25, pan = 0) {
+  if (play('shot', Math.min(1, vol * 2.6), pan, 0.94 + Math.random() * 0.12)) return;
   const t = AC.currentTime;
   const buf = AC.createBuffer(1, 2205, 44100);
   const d = buf.getChannelData(0);
@@ -321,8 +362,8 @@ function shotSound(vol = 0.25, pan = 0) {
   src.connect(g);
   if (pan && AC.createStereoPanner) {
     const p = AC.createStereoPanner(); p.pan.value = pan;
-    g.connect(p).connect(AC.destination);
-  } else g.connect(AC.destination);
+    g.connect(p).connect(master);
+  } else g.connect(master);
   src.start();
 }
 
@@ -347,18 +388,27 @@ $('go').onclick = join;
 $('nick').addEventListener('keydown', e => e.key === 'Enter' && join());
 $('room').addEventListener('keydown', e => e.key === 'Enter' && join());
 
+let myNick = null, myRoom = null, reconnT = null;
+function connect() {
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  ws = new WebSocket(`${proto}://${location.host}`);
+  ws.onopen = () => ws.send(JSON.stringify({ t: 'join', name: myNick, room: myRoom }));
+  ws.onmessage = (e) => onMsg(JSON.parse(e.data));
+  ws.onclose = () => { // auto-reconnect with same nick/room; 'init' rebuilds state
+    showMsg('CONNECTION LOST — reconnecting…', 999999);
+    clearTimeout(reconnT);
+    reconnT = setTimeout(connect, 1500);
+  };
+}
 function join() {
   if (ws) return; // Space on a focused button must not re-join
   $('go').blur();
-  const nick = $('nick').value.trim() || 'player' + Math.floor(Math.random() * 99);
-  const room = ($('room').value.trim() || 'dust').replace(/[^\w-]/g, '') || 'dust';
-  localStorage.setItem('nick', nick);
-  history.replaceState(null, '', '?room=' + room);
-  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-  ws = new WebSocket(`${proto}://${location.host}`);
-  ws.onopen = () => ws.send(JSON.stringify({ t: 'join', name: nick, room }));
-  ws.onmessage = (e) => onMsg(JSON.parse(e.data));
-  ws.onclose = () => showMsg('DISCONNECTED — refresh to rejoin', 999999);
+  myNick = $('nick').value.trim() || 'player' + Math.floor(Math.random() * 99);
+  myRoom = ($('room').value.trim() || 'dust').replace(/[^\w-]/g, '') || 'dust';
+  localStorage.setItem('nick', myNick);
+  history.replaceState(null, '', '?room=' + myRoom);
+  connect();
+  setInterval(() => { if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 'ping', ts: performance.now() })); }, 2000);
   $('join').style.display = 'none';
   document.body.requestPointerLock && renderer.domElement.requestPointerLock();
   AC.resume();
@@ -367,16 +417,23 @@ function join() {
 function onMsg(m) {
   switch (m.t) {
     case 'init':
+      for (const id of [...remotes.keys()]) removeRemote(id); // clean slate (reconnect)
+      dead = false; frozen = false; myHp = 100;
+      $('deathveil').style.opacity = 0;
+      showMsg('', 1);
       myId = m.id;
-      pos.set(m.spawn[0], m.spawn[1], m.spawn[2]);
+      pos.set(m.spawn[0], m.spawn[1], m.spawn[2]); vel.set(0, 0, 0);
       yaw = Math.atan2(pos.x, pos.z); pitch = 0; // face map center
       roundEndsAt = m.roundEndsAt; serverOffset = m.now - Date.now();
       for (const p of m.players) if (p.id !== myId) makeRemote(p);
       buildMedkits(m.medkits || []);
       break;
+    case 'pong':
+      $('ping').textContent = Math.round(performance.now() - m.ts) + ' ms';
+      break;
     case 'medkit':
       if (medkitMeshes[m.i]) medkitMeshes[m.i].visible = false;
-      if (m.id === myId) { myHp = m.hp; healFlash(); healSound(); }
+      if (m.id === myId) { myHp = m.hp; healFlash(); if (!play('medkit', 0.8)) healSound(); }
       break;
     case 'medkitup':
       if (medkitMeshes[m.i]) medkitMeshes[m.i].visible = true;
@@ -430,11 +487,21 @@ function onMsg(m) {
       const killer = m.by === myId ? 'you' : (remotes.get(m.by)?.name || '?');
       const victim = m.id === myId ? 'you' : (remotes.get(m.id)?.name || '?');
       feed(`${killer} ${m.head ? '⌖' : '☠'} ${victim}`);
-      if (m.id === myId) { dead = true; myHp = 0; showMsg('YOU DIED — respawning…', 3000); flash(); $('deathveil').style.opacity = 1; }
-      else { const r = remotes.get(m.id); if (r) killRemote(r); }
+      if (m.id === myId) { dead = true; myHp = 0; showMsg('YOU DIED — respawning…', 3000); flash(); $('deathveil').style.opacity = 1; play('death', 0.8); }
+      else {
+        const r = remotes.get(m.id);
+        if (r) {
+          killRemote(r);
+          const dist = camera.position.distanceTo(r.group.position);
+          play('death', Math.min(0.6, 5 / (dist + 2)));
+        }
+      }
       if (m.by === myId) {
         hitmark();
+        if (m.head) play('headshot', 0.8);
         const banners = { 3: 'ON FIRE!', 5: 'RAMPAGE!', 7: 'GODLIKE!', 10: 'UNSTOPPABLE!' };
+        const voices = { 3: 'onfire', 5: 'rampage', 7: 'godlike', 10: 'unstoppable' };
+        if (voices[m.streak]) play(voices[m.streak], 0.9);
         showMsg(m.head ? 'HEADSHOT!' : (banners[m.streak] || 'KILL'), 1100);
       }
       break;
@@ -447,6 +514,7 @@ function onMsg(m) {
       frozen = true;
       const top = m.scores[0];
       showMsg(`ROUND OVER${top ? ' — ' + top.name + ' wins (' + top.kills + ' kills)' : ''}`, m.breakMs);
+      play('roundover', 0.9);
       sb.style.display = 'block'; renderScores();
       break;
     }
@@ -458,6 +526,7 @@ function onMsg(m) {
       pos.set(...m.spawn); vel.set(0, 0, 0); yaw = Math.atan2(pos.x, pos.z);
       roundEndsAt = m.roundEndsAt; serverOffset = m.now - Date.now();
       sb.style.display = 'none'; showMsg('ROUND START', 1500);
+      play('roundstart', 0.9);
       break;
   }
 }
@@ -487,7 +556,8 @@ function healFlash() {
 let hmT = null;
 function hitmark() {
   const h = $('hitmark');
-  h.style.opacity = 1; blip();
+  h.style.opacity = 1;
+  if (!play('hit', 0.5)) blip();
   clearTimeout(hmT); hmT = setTimeout(() => h.style.opacity = 0, 90);
 }
 function renderScores() {
@@ -520,7 +590,7 @@ function reload() {
   if (reloading || ammo === 30 || dead) return;
   reloading = true;
   $('ammo').textContent = 'RELOADING';
-  shotSound(0.05); setTimeout(() => shotSound(0.06), 1300); // mag out / mag in clicks
+  if (!play('reload', 0.7)) { shotSound(0.05); setTimeout(() => shotSound(0.06), 1300); } // mag out / mag in
   setTimeout(() => { ammo = 30; reloading = false; }, 2000);
 }
 const raycaster = new THREE.Raycaster();
@@ -602,7 +672,7 @@ function tick(now) {
     if (firing) shoot(now); else spread = Math.max(baseSpread(), spread - 0.12 * dt);
     gun.position.z += (-0.35 - gun.position.z) * 0.2;
     const moving = move.lengthSq() > 0 && onGround;
-    if (moving) { stepT += dt; if (stepT > 0.37) { stepT = 0; shotSound(0.018); } } else stepT = 0;
+    if (moving) { stepT += dt; if (stepT > 0.37) { stepT = 0; if (!play('step', 0.4, 0, 0.85 + Math.random() * 0.3)) shotSound(0.018); } } else stepT = 0;
     gun.position.y = -0.18 + (moving ? Math.sin(now * 0.013) * 0.012 : 0);
   }
   gun.rotation.x += ((reloading ? -0.95 : 0) - gun.rotation.x) * 0.18;
