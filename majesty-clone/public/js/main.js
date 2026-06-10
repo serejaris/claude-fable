@@ -7,6 +7,7 @@ import { placeFlag, boostFlag, removeFlag } from './sim/economy.js';
 import { createRenderer } from './render/renderer.js';
 import { createUI } from './ui/ui.js';
 import { saveGame, loadGame, hasSave, clearSave } from './save.js';
+import { createAudio } from './audio.js';
 
 const params = new URLSearchParams(location.search);
 const DEBUG = params.has('debug');
@@ -53,6 +54,18 @@ const actions = {
   unflag(f) { removeFlag(game.state, f); },
 };
 
+const audio = createAudio();
+window.__audio = audio;
+
+// громкость по положению события: на экране — полная, за экраном — приглушённо/тихо
+function sfxVol(e, base = 1, offscreenFactor = 0) {
+  if (e.x === undefined) return base;
+  const s = renderer.worldToScreen(e.x, e.y);
+  const { vw, vh } = renderer.viewSize;
+  const onscreen = s.x > -80 && s.x < vw + 80 && s.y > -80 && s.y < vh + 80;
+  return onscreen ? base : base * offscreenFactor;
+}
+
 const ui = createUI(game, actions);
 window.__game = game; // debug/playtest handle
 window.__actions = actions;
@@ -84,6 +97,7 @@ function consumeEvents(state) {
   for (const e of state.events) {
     switch (e.t) {
       case 'hit':
+        audio.play(e.cls === 'wizard' ? 'hit_magic' : e.ranged ? 'hit_ranged' : 'hit_melee', sfxVol(e, 0.45));
         if (e.ranged) {
           const from = state.heroes.find(h => h.id === e.from) || state.buildings.find(b => b.id === e.from);
           if (from) vfx.push({ kind: 'arrow', x: from.x, y: from.y - 8, x2: e.x, y2: e.y, color: e.cls === 'wizard' ? '#7d8fe0' : '#7a6a4f', t0: performance.now(), dur: 130 });
@@ -91,21 +105,26 @@ function consumeEvents(state) {
         vfx.push({ kind: 'text', text: `-${Math.round(e.dmg)}`, x: e.x + (Math.random() - 0.5) * 10, y: e.y - 8, color: '#e8e0c8', t0: performance.now(), dur: 600 });
         break;
       case 'death':
+        audio.play('monster_death', sfxVol(e, 0.55));
         vfx.push({ kind: 'flash', x: e.x, y: e.y, color: '#8d2f23', t0: performance.now(), dur: 400 });
         break;
       case 'hero-death':
+        audio.play('hero_death', sfxVol(e, 0.9, 0.5));
         vfx.push({ kind: 'text', text: `☠ ${e.name}`, x: e.x, y: e.y - 10, color: '#d65b4a', big: true, t0: performance.now(), dur: 1600 });
         ui.chronicle(`☠ ${e.name} пал в бою`, 'bad');
         break;
       case 'levelup':
+        audio.play('levelup', sfxVol(e, 0.6, 0.25));
         vfx.push({ kind: 'text', text: `✦ Уровень ${e.level}`, x: e.x, y: e.y - 18, color: '#e9c95a', big: true, t0: performance.now(), dur: 1300 });
         break;
       case 'bounty':
       case 'pickup':
+        audio.play('coin', sfxVol(e, 0.5));
         vfx.push({ kind: 'text', text: `+${e.amount} зол.`, x: e.x, y: e.y - 12, color: '#e9c95a', t0: performance.now(), dur: 900 });
         break;
       case 'purchase': {
         logInflow(state, e.tax);
+        audio.play(e.item === 'potion' ? 'potion' : 'anvil', sfxVol(e, 0.7, 0.2));
         // покупка должна быть видна: герой реально проапгрейдился
         const labels = { weapon: '⚔ новое оружие!', armor: '🛡 новая броня!', potion: '🧪 зелье' };
         vfx.push({ kind: 'text', text: labels[e.item] || 'покупка', x: e.x, y: e.y - 14, color: '#e9c95a', big: e.item !== 'potion', t0: performance.now(), dur: 1500 });
@@ -115,6 +134,7 @@ function consumeEvents(state) {
       }
       case 'dues':
         logInflow(state, e.amount);
+        audio.play('coin', sfxVol(e, 0.35));
         vfx.push({ kind: 'text', text: `десятина +${e.amount} зол.`, x: e.x, y: e.y - 22, color: '#b8d178', t0: performance.now(), dur: 1100 });
         break;
       case 'income':
@@ -122,23 +142,34 @@ function consumeEvents(state) {
         vfx.push({ kind: 'text', text: `+${e.amount}`, x: e.x, y: e.y - 16, color: 'rgba(233,201,90,0.75)', t0: performance.now(), dur: 900 });
         break;
       case 'discover':
+        audio.play('discover', 0.65);
         ui.chronicle(`🗺 Разведчики доносят: обнаружено — ${e.label}!`, 'warn');
         break;
       case 'lair-down':
+        audio.play('lair_down', 0.95);
         vfx.push({ kind: 'text', text: `⚑ ${e.label} — уничтожено!`, x: e.x, y: e.y - 16, color: '#e9c95a', big: true, t0: performance.now(), dur: 2200 });
         ui.chronicle(`⚑ ${e.label} — уничтожено!`, 'good');
         break;
       case 'wave':
+        if (e.size >= 3) audio.play('wave', 0.7);
         if (e.size >= 3) ui.chronicle(`⚠ К королевству идёт отряд (${e.size})`, 'bad');
         break;
       case 'building-down':
+        audio.play('lair_down', 0.6);
         ui.chronicle(`🔥 ${BUILDINGS[e.type].label}: здание разрушено`, 'bad');
         vfx.push({ kind: 'flash', x: e.x, y: e.y, color: '#d4742c', t0: performance.now(), dur: 700 });
+        break;
+      case 'flag':
+        audio.play('flag', 0.7);
+        break;
+      case 'revive':
+        audio.play('hire', 0.65);
         break;
       case 'decline':
         vfx.push({ kind: 'text', text: 'не стоит того…', x: e.x, y: e.y - 16, color: '#d8c9a3', t0: performance.now(), dur: 1300 });
         break;
       case 'hire':
+        audio.play('hire', 0.75);
         break;
       case 'relax':
         break;
@@ -151,6 +182,8 @@ function consumeEvents(state) {
 
 let last = performance.now();
 let acc = 0;
+
+let resultPlayed = false;
 
 function frame(now) {
   let dt = Math.min(now - last, 250); // clamp: no spiral of death
@@ -174,6 +207,8 @@ function frame(now) {
     lastAutosave = game.state.tick;
     saveGame(game.state);
   }
+  if (game.state.result && !resultPlayed) { resultPlayed = true; audio.play(game.state.result === 'win' ? 'win' : 'lose', 1); }
+  if (!game.state.result) resultPlayed = false;
   game.incomeRate = incomeRate(game.state);
   const alpha = Math.min(acc / (SIM_DT * 1000), 1);
   updateHover();
@@ -186,6 +221,15 @@ requestAnimationFrame(frame);
 document.addEventListener('visibilitychange', () => {
   if (document.hidden && !game.state.result) saveGame(game.state); // a finished game is not worth restoring
   last = performance.now();
+});
+
+// ---------- audio unlock + UI clicks ----------
+
+const unlockOnce = () => { audio.unlock(); };
+window.addEventListener('pointerdown', unlockOnce, { once: false });
+window.addEventListener('keydown', unlockOnce, { once: false });
+document.getElementById('overlay').addEventListener('click', e => {
+  if (e.target.closest('button')) audio.play('click', 0.4);
 });
 
 // ---------- input ----------
@@ -266,7 +310,7 @@ function handleClick(sx, sy) {
     const tx = txOf(w.x), ty = txOf(w.y);
     if (canPlace(state, type, tx, ty) && state.gold >= BUILDINGS[type].cost) {
       const b = addBuilding(state, type, tx, ty);
-      if (b) ui.chronicle(`🏗 ${BUILDINGS[type].label}: построено`, 'good');
+      if (b) { audio.play('build', 0.8); ui.chronicle(`🏗 ${BUILDINGS[type].label}: построено`, 'good'); }
       if (!BUILDINGS[type].max) game.view.mode = null;
     }
     return;

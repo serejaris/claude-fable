@@ -51,6 +51,10 @@ export function createUI(game, actions) {
     b.onclick = () => actions.setSpeed(+b.dataset.speed);
   }
   $('#btn-save').onclick = () => { actions.save(); toast('Королевство сохранено.'); };
+  const soundBtn = $('#btn-sound');
+  const syncSoundBtn = () => { soundBtn.textContent = window.__audio?.muted ? '🔇' : '🔊'; };
+  soundBtn.onclick = () => { window.__audio?.toggleMute(); syncSoundBtn(); };
+  setTimeout(syncSoundBtn, 0);
   $('#btn-new').onclick = () => confirmModal('Начать новое королевство? Текущий прогресс будет потерян.', actions.newGame);
   $('#btn-help').onclick = () => showHelp();
 
