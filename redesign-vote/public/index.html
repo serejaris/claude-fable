@@ -176,6 +176,7 @@
      страница + статья «Перешёл на Claude Fable 5». Превью живые: кнопки ГЛАВНАЯ/СТАТЬЯ переключают
      страницу в карточке, клик по превью открывает её целиком.
      <b>Поставь 👍 или 👎 каждой концепции</b> — голос можно передумать.
+     Карточки отсортированы по рейтингу: сверху — лидеры голосования.
      Брифы и промпты — в <a href="https://github.com/serejaris/sereja.tech/issues/112">issue #112</a>.</p>
 </header>
 
@@ -233,6 +234,7 @@
           <button data-page="post">Статья</button>
           <a href="${c.slug}/index.html">index ↗</a>
           <a href="${c.slug}/post.html">post ↗</a>
+          <a href="https://github.com/serejaris/claude-fable/blob/main/redesign-vote/prompts/${c.slug}.md" target="_blank" rel="noopener">промпт ↗</a>
         </div>
         <div class="votes">
           <button class="like" data-slug="${c.slug}" data-value="1">👍 <span class="cnt">0</span></button>
@@ -263,6 +265,22 @@
       const c = counts[slug] || { likes: 0, dislikes: 0 };
       btn.querySelector('.cnt').textContent = value === 1 ? c.likes : c.dislikes;
       btn.classList.toggle('voted', myVotes[slug] === value);
+    });
+    rankCards(counts);
+  }
+
+  // сортировка по рейтингу через CSS order — iframe-превью не перезагружаются
+  function rankCards(counts) {
+    const ranked = concepts
+      .map((c, i) => {
+        const v = counts[c.slug] || { likes: 0, dislikes: 0 };
+        return { slug: c.slug, score: v.likes - v.dislikes, likes: v.likes, index: i };
+      })
+      .sort((a, b) => b.score - a.score || b.likes - a.likes || a.index - b.index);
+    ranked.forEach((r, pos) => {
+      const card = document.querySelector(`.votes button[data-slug="${r.slug}"]`).closest('.card');
+      card.style.order = pos;
+      card.querySelector('.num').textContent = String(pos + 1).padStart(2, '0');
     });
   }
 
