@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>СЕРЕЖА РИС — панк-зин про вайбкодинг</title>
+<meta name="description" content="Самиздат про вайбкодинг, Claude Code и AI-агентов. Отксерено и сшито степлером.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=PT+Mono&family=Caveat:wght@400;700&family=Oswald:wght@500;700&family=Rubik+Mono+One&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#e9e5d9;
+  --paper-2:#ded8c8;
+  --ink:#161412;
+  --shock:#ff1f6b;
+  --tape:rgba(252,250,235,.5);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  font-family:'PT Mono',monospace;
+  color:var(--ink);
+  background:var(--paper);
+  background-image:
+    repeating-linear-gradient(2deg, rgba(0,0,0,.022) 0 2px, transparent 2px 7px),
+    repeating-linear-gradient(91deg, rgba(0,0,0,.015) 0 1px, transparent 1px 5px),
+    radial-gradient(ellipse at 30% 20%, rgba(255,255,255,.35), transparent 60%),
+    linear-gradient(var(--paper), var(--paper-2));
+  overflow-x:hidden;
+  line-height:1.55;
+}
+/* ксерокс-шум поверх всего */
+body::before{
+  content:"";
+  position:fixed;inset:0;z-index:50;pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='280' height='280'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity:.10;
+  mix-blend-mode:multiply;
+}
+/* затемнение краёв — лист, прижатый к стеклу ксерокса */
+body::after{
+  content:"";
+  position:fixed;inset:0;z-index:49;pointer-events:none;
+  background:
+    radial-gradient(120% 100% at 50% 45%, transparent 62%, rgba(20,16,10,.22) 100%),
+    linear-gradient(90deg, rgba(20,16,10,.12), transparent 6%, transparent 94%, rgba(20,16,10,.14));
+}
+a{color:inherit}
+.page{max-width:1060px;margin:0 auto;padding:36px 22px 80px;position:relative}
+
+/* ---------- скотч ---------- */
+.tape{
+  position:absolute;width:104px;height:30px;
+  background:var(--tape);
+  box-shadow:0 1px 3px rgba(0,0,0,.25);
+  backdrop-filter:blur(1px);
+  background-image:repeating-linear-gradient(90deg, rgba(255,255,255,.25) 0 3px, transparent 3px 6px);
+  border-left:1px dashed rgba(0,0,0,.12);
+  border-right:1px dashed rgba(0,0,0,.12);
+  z-index:5;
+}
+.tape.tl{top:-14px;left:-26px;transform:rotate(-38deg)}
+.tape.tr{top:-14px;right:-26px;transform:rotate(36deg)}
+.tape.tc{top:-15px;left:50%;transform:translateX(-50%) rotate(-2deg)}
+.tape.bl{bottom:-14px;left:-22px;transform:rotate(32deg)}
+
+/* ---------- кнопка-булавка ---------- */
+.pin{
+  position:absolute;top:-9px;left:50%;width:17px;height:17px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%, #fff 0 12%, var(--shock) 25%, #8f0030 95%);
+  box-shadow:0 2px 3px rgba(0,0,0,.45);
+  transform:translateX(-50%);
+  z-index:6;
+}
+
+/* ---------- шапка: ransom note ---------- */
+header{position:relative;margin-bottom:54px}
+.issue-stamp{
+  position:absolute;top:-8px;right:0;
+  font-family:'Caveat',cursive;font-size:1.25rem;font-weight:700;
+  border:2.5px solid var(--ink);border-radius:50% 46% 52% 48% / 48% 52% 46% 54%;
+  padding:10px 16px;transform:rotate(8deg);
+  color:var(--ink);
+  background:rgba(255,255,255,.4);
+  z-index:7;
+}
+.issue-stamp b{color:var(--shock)}
+.ransom{
+  font-size:clamp(2.1rem, 8.4vw, 5.4rem);
+  line-height:1.05;
+  letter-spacing:.02em;
+  user-select:none;
+  margin:18px 0 10px;
+  word-spacing:.3em;
+}
+.ransom span{
+  display:inline-block;
+  padding:.04em .12em;
+  margin:.04em .015em;
+}
+.r1{font-family:'Rubik Mono One',monospace;background:var(--ink);color:var(--paper);transform:rotate(-4deg)}
+.r2{font-family:'Playfair Display',serif;font-style:italic;background:#fff;transform:rotate(2.5deg);box-shadow:2px 2px 0 var(--ink)}
+.r3{font-family:'Oswald',sans-serif;font-weight:700;background:var(--shock);color:#fff;transform:rotate(-2deg)}
+.r4{font-family:'PT Mono',monospace;font-weight:700;border:3px solid var(--ink);transform:rotate(1.5deg);background:var(--paper)}
+.r5{font-family:'Rubik Mono One',monospace;background:#fff;transform:rotate(3deg) translateY(.06em);outline:2px dashed var(--ink);outline-offset:-5px}
+.r6{font-family:'Playfair Display',serif;background:var(--ink);color:var(--shock);transform:rotate(-3.5deg)}
+.r7{font-family:'Oswald',sans-serif;font-weight:700;background:#fff;transform:rotate(-1.6deg);box-shadow:-2px 2px 0 var(--shock)}
+.r8{font-family:'Rubik Mono One',monospace;background:var(--shock);color:var(--ink);transform:rotate(2deg)}
+.r9{font-family:'PT Mono',monospace;font-weight:700;background:var(--ink);color:var(--paper);transform:rotate(4deg) translateY(.08em)}
+.tagline{
+  display:inline-block;
+  font-size:.95rem;
+  background:var(--ink);color:var(--paper);
+  padding:6px 14px;
+  transform:rotate(-1.2deg);
+  text-transform:uppercase;
+  letter-spacing:.08em;
+}
+.tagline em{font-style:normal;color:var(--shock)}
+
+/* ---------- идентичность ---------- */
+.who{
+  position:relative;
+  max-width:640px;
+  margin:42px 0 0 6px;
+  background:#f6f2e6;
+  padding:26px 28px 24px;
+  transform:rotate(-1.4deg);
+  box-shadow:3px 4px 9px rgba(0,0,0,.22);
+}
+.who p{font-size:1rem}
+.who .hl{
+  background:linear-gradient(104deg, transparent 2%, rgba(255,31,107,.55) 6%, rgba(255,31,107,.45) 94%, transparent 98%);
+  padding:0 3px;
+}
+.who .scrawl{
+  font-family:'Caveat',cursive;font-size:1.45rem;font-weight:700;
+  color:var(--shock);
+  display:block;margin-top:12px;
+  transform:rotate(-1deg);
+}
+.who-note{
+  position:absolute;right:-150px;top:8px;width:140px;
+  font-family:'Caveat',cursive;font-size:1.3rem;line-height:1.15;
+  transform:rotate(4deg);
+  color:var(--ink);
+}
+.who-note .arr{display:block;font-size:1.9rem;transform:scaleX(-1);line-height:.7}
+
+/* ---------- featured ---------- */
+.featured{
+  position:relative;
+  margin:74px auto 0;
+  max-width:760px;
+  background:#fbf8ee;
+  border:3px solid var(--ink);
+  padding:34px 34px 30px;
+  transform:rotate(.9deg);
+  box-shadow:5px 6px 0 rgba(0,0,0,.55);
+}
+.featured::after{ /* загнутый угол */
+  content:"";position:absolute;right:0;bottom:0;width:46px;height:46px;
+  background:linear-gradient(315deg, var(--paper-2) 0 49%, rgba(0,0,0,.28) 50%, #efe9d9 52%, #f3eede 100%);
+  box-shadow:-2px -2px 4px rgba(0,0,0,.12);
+}
+.sticker-new{
+  position:absolute;top:-30px;left:-34px;
+  font-family:'Oswald',sans-serif;font-weight:700;font-size:1.06rem;
+  text-transform:uppercase;letter-spacing:.04em;
+  background:var(--shock);color:#fff;
+  padding:16px 14px;
+  transform:rotate(-12deg);
+  clip-path:polygon(50% 0, 61% 12%, 75% 5%, 79% 19%, 95% 16%, 91% 31%, 100% 38%, 92% 50%, 100% 62%, 89% 69%, 95% 84%, 79% 81%, 75% 95%, 61% 88%, 50% 100%, 39% 88%, 25% 95%, 21% 81%, 5% 84%, 11% 69%, 0 62%, 8% 50%, 0 38%, 9% 31%, 5% 16%, 21% 19%, 25% 5%, 39% 12%);
+  width:124px;height:124px;
+  display:flex;align-items:center;justify-content:center;text-align:center;
+  z-index:8;
+}
+.featured .kicker{
+  font-size:.78rem;text-transform:uppercase;letter-spacing:.2em;
+  border-bottom:2px solid var(--ink);
+  display:inline-block;padding-bottom:3px;margin-bottom:14px;
+}
+.featured h2{
+  font-family:'Oswald',sans-serif;font-weight:700;
+  font-size:clamp(1.5rem, 4.6vw, 2.4rem);
+  line-height:1.12;text-transform:uppercase;
+  margin-bottom:14px;
+}
+.featured h2 a{text-decoration:none;background:linear-gradient(transparent 68%, rgba(255,31,107,.6) 68%)}
+.featured h2 a:hover{color:var(--shock)}
+.featured .date{
+  display:inline-block;
+  font-size:.85rem;letter-spacing:.12em;
+  border:2px solid var(--ink);
+  padding:2px 10px;transform:rotate(-2deg);
+  margin-bottom:14px;
+  background:rgba(255,255,255,.5);
+}
+.featured p{font-size:.98rem;max-width:56ch}
+.featured .go{
+  display:inline-block;margin-top:18px;
+  font-family:'PT Mono',monospace;font-weight:700;
+  background:var(--ink);color:var(--paper);
+  text-decoration:none;
+  padding:10px 18px;
+  transform:rotate(-1deg);
+  box-shadow:3px 3px 0 var(--shock);
+}
+.go:hover{background:var(--shock);color:#fff;box-shadow:3px 3px 0 var(--ink)}
+.featured-margin{
+  position:absolute;right:-12px;top:50%;
+  font-family:'Caveat',cursive;font-size:1.5rem;font-weight:700;color:var(--shock);
+  transform:rotate(6deg) translateY(-50%);
+  max-width:130px;line-height:1.05;
+}
+
+/* ---------- секции ---------- */
+.section-head{
+  margin:86px 0 34px;
+  position:relative;
+}
+.section-head h3{
+  display:inline-block;
+  font-family:'Rubik Mono One',monospace;
+  font-size:clamp(1.15rem, 3.4vw, 1.7rem);
+  background:var(--ink);color:var(--paper);
+  padding:8px 18px 7px;
+  transform:rotate(-1.5deg);
+  box-shadow:4px 4px 0 var(--shock);
+}
+.section-head .note{
+  font-family:'Caveat',cursive;font-size:1.35rem;
+  margin-left:14px;color:var(--ink);
+  display:inline-block;transform:rotate(2deg);
+}
+
+/* ---------- архив вырезок ---------- */
+.clips{
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(290px, 1fr));
+  gap:30px 26px;
+}
+.clip{
+  position:relative;
+  background:#f7f3e7;
+  padding:20px 20px 16px;
+  box-shadow:2px 3px 7px rgba(0,0,0,.25);
+  text-decoration:none;
+  display:block;
+  transition:transform .12s ease;
+}
+.clip:nth-child(4n+1){transform:rotate(-1.8deg)}
+.clip:nth-child(4n+2){transform:rotate(1.3deg);margin-top:10px}
+.clip:nth-child(4n+3){transform:rotate(-.8deg)}
+.clip:nth-child(4n){transform:rotate(2.1deg);margin-top:-6px}
+.clip:hover{transform:rotate(0) scale(1.025);z-index:9}
+.clip::after{ /* загнутый уголок */
+  content:"";position:absolute;right:0;bottom:0;width:26px;height:26px;
+  background:linear-gradient(315deg, var(--paper-2) 0 49%, rgba(0,0,0,.25) 50%, #ece5d2 52%, #f1ebd9 100%);
+}
+.clip .d{
+  font-size:.74rem;letter-spacing:.14em;
+  color:#5a554b;
+  display:block;margin-bottom:8px;
+}
+.clip .t{
+  font-weight:700;font-size:1.0rem;line-height:1.35;
+  display:block;
+}
+.clip:hover .t{background:linear-gradient(transparent 60%, rgba(255,31,107,.5) 60%)}
+.clip .scribble{
+  position:absolute;top:8px;right:12px;
+  font-family:'Caveat',cursive;font-size:1.15rem;font-weight:700;
+  color:var(--shock);transform:rotate(7deg);
+}
+
+/* ---------- видеокассеты ---------- */
+.vhs-wrap{display:grid;grid-template-columns:1.35fr 1fr;gap:34px;align-items:start}
+.vhs-featured{
+  position:relative;background:#f8f4e8;padding:16px 16px 14px;
+  border:3px solid var(--ink);
+  transform:rotate(-1.2deg);
+  box-shadow:5px 5px 0 rgba(0,0,0,.5);
+  text-decoration:none;display:block;
+}
+.vhs-featured img{
+  width:100%;display:block;
+  filter:grayscale(1) contrast(1.65) brightness(1.06);
+  border:2px solid var(--ink);
+}
+.vhs-featured .cap{
+  display:block;margin-top:12px;font-weight:700;font-size:.96rem;line-height:1.4;
+}
+.vhs-featured .cap small{display:block;font-weight:400;letter-spacing:.12em;color:#5a554b;margin-top:5px}
+.vhs-featured .rec{
+  position:absolute;top:24px;left:24px;
+  font-family:'Oswald',sans-serif;font-weight:700;font-size:.8rem;letter-spacing:.18em;
+  background:var(--shock);color:#fff;padding:3px 10px;
+  transform:rotate(-3deg);
+  z-index:3;
+}
+.vhs-list{display:flex;flex-direction:column;gap:18px}
+.vhs-item{
+  display:flex;gap:14px;align-items:flex-start;text-decoration:none;
+  background:#f5f1e4;padding:12px;box-shadow:2px 2px 6px rgba(0,0,0,.22);
+  position:relative;
+}
+.vhs-item:nth-child(odd){transform:rotate(1.1deg)}
+.vhs-item:nth-child(even){transform:rotate(-1.3deg)}
+.vhs-item:hover{transform:rotate(0)}
+.vhs-item img{
+  width:112px;height:63px;object-fit:cover;flex-shrink:0;
+  filter:grayscale(1) contrast(1.7) brightness(1.05);
+  border:2px solid var(--ink);
+}
+.vhs-item .vt{font-size:.84rem;font-weight:700;line-height:1.35}
+.vhs-item .vd{font-size:.72rem;letter-spacing:.12em;color:#5a554b;display:block;margin-top:4px}
+.vhs-item:hover .vt{color:var(--shock)}
+
+/* ---------- ссылки-стикеры ---------- */
+.stickers{display:flex;flex-wrap:wrap;gap:18px 16px;align-items:center}
+.stk{
+  text-decoration:none;
+  font-weight:700;font-size:.92rem;
+  padding:12px 18px;
+  position:relative;
+  box-shadow:2px 3px 6px rgba(0,0,0,.3);
+  transition:transform .1s ease;
+}
+.stk small{display:block;font-weight:400;font-size:.72rem;margin-top:3px;letter-spacing:.05em}
+.stk:hover{transform:scale(1.06) rotate(0)!important;z-index:9}
+.stk-1{background:var(--ink);color:var(--paper);transform:rotate(-2.5deg)}
+.stk-1 small{color:var(--shock)}
+.stk-2{background:var(--shock);color:#fff;transform:rotate(1.8deg);border-radius:50% 48% 52% 50%/55% 50% 50% 45%;padding:18px 22px}
+.stk-3{background:#fff;border:3px solid var(--ink);transform:rotate(-1.2deg)}
+.stk-4{background:var(--ink);color:var(--shock);transform:rotate(2.4deg);border-radius:4px 18px 4px 18px}
+.stk-5{background:#fff;border:3px dashed var(--shock);color:var(--ink);transform:rotate(-3deg)}
+.stk-6{background:var(--paper);border:3px solid var(--ink);outline:2px solid var(--ink);outline-offset:3px;transform:rotate(1.4deg)}
+.stk-7{background:var(--shock);color:var(--ink);transform:rotate(-1.7deg);clip-path:polygon(4% 0,100% 6%,96% 100%,0 92%)}
+
+/* ---------- футер ---------- */
+footer{
+  margin-top:96px;
+  text-align:center;
+  font-family:'Caveat',cursive;
+  font-size:1.45rem;
+  transform:rotate(-1deg);
+}
+footer .staple{
+  display:inline-block;width:34px;height:10px;
+  border:3px solid var(--ink);border-bottom:none;
+  margin:0 10px;vertical-align:middle;
+  transform:rotate(3deg);
+}
+footer p+p{font-family:'PT Mono',monospace;font-size:.74rem;letter-spacing:.18em;margin-top:14px;color:#5a554b;text-transform:uppercase}
+
+/* ---------- мобилка ---------- */
+@media (max-width:860px){
+  .who-note{position:static;width:auto;margin-top:14px;display:block;transform:rotate(-1deg)}
+  .who-note .arr{display:inline;transform:none;font-size:1.4rem}
+  .featured-margin{position:static;display:block;transform:rotate(-2deg);margin-top:16px;max-width:none}
+  .vhs-wrap{grid-template-columns:1fr}
+}
+@media (max-width:560px){
+  .page{padding:24px 14px 60px}
+  .issue-stamp{position:static;display:inline-block;margin-bottom:10px}
+  .sticker-new{top:-26px;left:-12px;width:104px;height:104px;font-size:.9rem}
+  .featured{padding:26px 20px 24px}
+  .clip:nth-child(n){transform:rotate(0);margin-top:0}
+  .stickers{gap:14px 10px}
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ======== ШАПКА ======== -->
+  <header>
+    <div class="issue-stamp">самиздат<br><b>№1 · июнь 2026</b></div>
+    <h1 class="ransom" aria-label="Сережа Рис">
+      <span class="r1">С</span><span class="r2">Е</span><span class="r3">Р</span><span class="r4">Е</span><span class="r5">Ж</span><span class="r6">А</span>
+      <span class="r7">Р</span><span class="r8">И</span><span class="r9">С</span>
+    </h1>
+    <p class="tagline">зин про вайбкодинг · <em>claude code</em> · ai-агентов</p>
+
+    <div class="who">
+      <div class="tape tl"></div>
+      <div class="tape tr"></div>
+      <p>Архитектор агентных систем на Claude Code. <span class="hl">Не пишу код руками</span> — направляю агентов промптами. Веду телеграм-канал, снимаю на YouTube и собрал сообщество вайбкодеров на 2000+ человек.</p>
+      <span class="scrawl">всё, что здесь напечатано, — проверено руками. точнее, агентами.</span>
+      <div class="who-note"><span class="arr">↰</span>это я. честно.</div>
+    </div>
+  </header>
+
+  <!-- ======== FEATURED ======== -->
+  <section class="featured" aria-label="Свежий выпуск">
+    <div class="sticker-new">свежак!!!</div>
+    <div class="tape tc"></div>
+    <span class="kicker">главный материал номера</span>
+    <h2><a href="post.html">Перешёл на Claude Fable 5: цены, effort, кейсы</a></h2>
+    <span class="date">10.06.2026</span>
+    <p>Anthropic выпустила новый класс моделей — Mythos. Вдвое дороже Opus, но cost per task сходится. Стрим в день релиза: шутер с деплоем за полчаса, арканоид с управлением рукой, клон Majesty и анти-кейс с 32 агентами.</p>
+    <a class="go" href="post.html">ЧИТАТЬ РАЗВОРОТ →</a>
+    <div class="featured-margin">xhigh, не max!! ←&nbsp;запомни</div>
+  </section>
+
+  <!-- ======== АРХИВ ======== -->
+  <div class="section-head">
+    <h3>АРХИВ ВЫРЕЗОК</h3>
+    <span class="note">приколото как было — не разбирать!</span>
+  </div>
+  <section class="clips" aria-label="Статьи">
+    <a class="clip" href="#"><span class="pin"></span><span class="d">30.04.2026</span><span class="t">OTel для Claude Code — рентген твоих скиллов</span></a>
+    <a class="clip" href="#"><span class="d">27.04.2026</span><span class="t">Свой Miro за 30 минут вместо подписки</span><span class="scribble">DIY!</span></a>
+    <a class="clip" href="#"><span class="pin"></span><span class="d">22.04.2026</span><span class="t">Как трекать задачи агентом в нескольких репо</span></a>
+    <a class="clip" href="#"><span class="d">22.04.2026</span><span class="t">Как я научил Claude Code писать техно-музыку</span><span class="scribble">бам-бам</span></a>
+    <a class="clip" href="#"><span class="pin"></span><span class="d">08.04.2026</span><span class="t">Как я включил Claude Code в режим без вопросов</span></a>
+    <a class="clip" href="#"><span class="d">29.03.2026</span><span class="t">Написал скилл для аудита продукта в Claude Code</span></a>
+    <a class="clip" href="#"><span class="pin"></span><span class="d">27.03.2026</span><span class="t">Эту статью написал мой агент по тикету</span><span class="scribble">!!!</span></a>
+    <a class="clip" href="#"><span class="d">19.03.2026</span><span class="t">Software for One: софт, который нужен только тебе</span></a>
+    <a class="clip" href="#"><span class="pin"></span><span class="d">16.03.2026</span><span class="t">Слои контекста: организуем файлы по скорости изменения</span></a>
+    <a class="clip" href="#"><span class="d">14.03.2026</span><span class="t">AGENTS.md: дружим Claude Code с Codex</span></a>
+    <a class="clip" href="#"><span class="pin"></span><span class="d">12.03.2026</span><span class="t">NotebookLM + Claude Code: бесплатный RAG за 5 минут</span></a>
+    <a class="clip" href="#"><span class="d">05.03.2026</span><span class="t">Symphony: демон на Elixir раздаёт задачи Codex</span></a>
+    <a class="clip" href="#"><span class="pin"></span><span class="d">05.03.2026</span><span class="t">Haiku, Sonnet, Opus: какую модель ставить субагенту</span></a>
+    <a class="clip" href="#"><span class="d">04.03.2026</span><span class="t">Как я собрал совет директоров из субагентов</span><span class="scribble">биг босс</span></a>
+  </section>
+
+  <!-- ======== ВИДЕО ======== -->
+  <div class="section-head">
+    <h3>ВИДЕОКАССЕТЫ</h3>
+    <span class="note">перемотай на начало, когда досмотришь</span>
+  </div>
+  <section class="vhs-wrap" aria-label="YouTube">
+    <a class="vhs-featured" href="https://www.youtube.com/watch?v=eguZQ4MAh8U" target="_blank" rel="noopener">
+      <div class="tape tl"></div>
+      <span class="rec">● REC · СВЕЖЕЕ</span>
+      <img src="https://i.ytimg.com/vi/eguZQ4MAh8U/mqdefault.jpg" alt="Claude Fable 5: тесты, бенчмарки и разбор нового AI-релиза Anthropic" loading="lazy">
+      <span class="cap">Claude Fable 5: тесты, бенчмарки и разбор нового AI-релиза Anthropic<small>09.06.2026 · стрим в день релиза</small></span>
+    </a>
+    <div class="vhs-list">
+      <a class="vhs-item" href="https://www.youtube.com/watch?v=05xs_kyacxI" target="_blank" rel="noopener">
+        <img src="https://i.ytimg.com/vi/05xs_kyacxI/mqdefault.jpg" alt="GPT Image 2" loading="lazy">
+        <span><span class="vt">GPT Image 2: разбор новой модели OpenAI</span><span class="vd">21.04.2026</span></span>
+      </a>
+      <a class="vhs-item" href="https://www.youtube.com/watch?v=yX9-bOj1Mu0" target="_blank" rel="noopener">
+        <img src="https://i.ytimg.com/vi/yX9-bOj1Mu0/mqdefault.jpg" alt="Claude Design" loading="lazy">
+        <span><span class="vt">Claude Design: обзор нового AI для дизайна, прототипов и презентаций</span><span class="vd">17.04.2026</span></span>
+      </a>
+      <a class="vhs-item" href="https://www.youtube.com/watch?v=tqDBIhMjo8w" target="_blank" rel="noopener">
+        <img src="https://i.ytimg.com/vi/tqDBIhMjo8w/mqdefault.jpg" alt="Claude Opus 4.7" loading="lazy">
+        <span><span class="vt">Claude Opus 4.7, обзор, вайбкодинг тесты, сравнение с GPT 5.4</span><span class="vd">16.04.2026</span></span>
+      </a>
+    </div>
+  </section>
+
+  <!-- ======== ССЫЛКИ ======== -->
+  <div class="section-head">
+    <h3>ЯВКИ / ПАРОЛИ</h3>
+    <span class="note">переклеено со старого холодильника</span>
+  </div>
+  <section class="stickers" aria-label="Ссылки">
+    <a class="stk stk-1" href="https://t.me/ris_ai" target="_blank" rel="noopener">рис. AI<small>тг-канал</small></a>
+    <a class="stk stk-2" href="https://t.me/vibecod3rs" target="_blank" rel="noopener">Сообщество Вайбкодеров<small>2000+ человек</small></a>
+    <a class="stk stk-3" href="https://www.youtube.com/@serejaris" target="_blank" rel="noopener">YouTube<small>@serejaris</small></a>
+    <a class="stk stk-4" href="https://vibecoding.phd" target="_blank" rel="noopener">Кружок Вайбкодинга<small>vibecoding.phd</small></a>
+    <a class="stk stk-5" href="https://hsl.sh" target="_blank" rel="noopener">HSL<small>AI-студия</small></a>
+    <a class="stk stk-6" href="https://x.com/riiiiiiiiss" target="_blank" rel="noopener">Twitter<small>@riiiiiiiiss</small></a>
+    <a class="stk stk-7" href="https://github.com/serejaris" target="_blank" rel="noopener">GitHub<small>serejaris</small></a>
+  </section>
+
+  <footer>
+    <p><span class="staple"></span>отксерено в трёх экземплярах, сшито степлером<span class="staple"></span></p>
+    <p>sereja.tech · копируй свободно · ссылка обязательна по понятиям</p>
+  </footer>
+
+</div>
+</body>
+</html>

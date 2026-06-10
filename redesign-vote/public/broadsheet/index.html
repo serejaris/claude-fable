@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>СЕРЕЖА РИС — Утренняя газета вайбкодинга</title>
+<meta name="description" content="Ежедневное обозрение вайбкодинга, Claude Code и агентных систем. Выпуск от 10 июня 2026 года.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=PT+Serif:ital,wght@0,400;0,700;1,400;1,700&family=PT+Mono&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f4eedd;
+    --paper-deep:#ede5cf;
+    --ink:#1c1814;
+    --ink-soft:#3d362c;
+    --ink-faint:#6f6657;
+    --rule:#1c1814;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;border-radius:0 !important;}
+  html{background:var(--paper-deep);}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:"PT Serif", Georgia, serif;
+    font-size:17px;
+    line-height:1.55;
+    max-width:1180px;
+    margin:0 auto;
+    padding:0 28px 60px;
+    border-left:1px solid var(--rule);
+    border-right:1px solid var(--rule);
+  }
+  a{color:inherit;text-decoration:none;}
+  a:hover{text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px;}
+  img{display:block;max-width:100%;}
+
+  /* ---------- типографские утилиты ---------- */
+  .smallcaps{
+    font-family:"PT Serif", serif;
+    text-transform:uppercase;
+    letter-spacing:.18em;
+    font-size:.72rem;
+    font-weight:700;
+  }
+  .rubric{
+    display:inline-block;
+    text-transform:uppercase;
+    letter-spacing:.22em;
+    font-size:.7rem;
+    font-weight:700;
+    border-top:3px solid var(--rule);
+    border-bottom:1px solid var(--rule);
+    padding:.35em 0 .3em;
+    margin-bottom:.9em;
+  }
+  hr.thick{border:0;border-top:3px solid var(--rule);margin:0;}
+  hr.thin{border:0;border-top:1px solid var(--rule);margin:0;}
+  hr.double{border:0;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);height:5px;margin:0;}
+
+  /* ---------- верхняя планка ---------- */
+  .ears{
+    display:flex;
+    justify-content:space-between;
+    gap:16px;
+    padding:10px 0 8px;
+    border-bottom:1px solid var(--rule);
+    font-size:.74rem;
+    text-transform:uppercase;
+    letter-spacing:.14em;
+  }
+  .ears span:nth-child(2){text-align:center;}
+  .ears span:last-child{text-align:right;}
+
+  /* ---------- мастхед ---------- */
+  .masthead{
+    text-align:center;
+    padding:26px 0 18px;
+  }
+  .masthead h1{
+    font-family:"Playfair Display", serif;
+    font-weight:900;
+    font-size:clamp(3rem, 10.5vw, 7.6rem);
+    letter-spacing:.045em;
+    line-height:.95;
+  }
+  .masthead h1 a:hover{text-decoration:none;}
+  .masthead .motto{
+    margin-top:14px;
+    font-style:italic;
+    font-size:1.02rem;
+  }
+  .masthead-rule{
+    border-top:3px solid var(--rule);
+    border-bottom:1px solid var(--rule);
+    height:7px;
+  }
+  .subline{
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    padding:8px 0;
+    border-bottom:3px solid var(--rule);
+    font-size:.72rem;
+    text-transform:uppercase;
+    letter-spacing:.18em;
+    font-weight:700;
+  }
+
+  /* ---------- первая полоса ---------- */
+  .front{
+    display:grid;
+    grid-template-columns:2.1fr 1fr;
+    gap:0;
+    margin-top:26px;
+  }
+  .lead{
+    padding-right:26px;
+    border-right:1px solid var(--rule);
+  }
+  .lead h2{
+    font-family:"Playfair Display", serif;
+    font-weight:900;
+    font-size:clamp(1.9rem, 4.6vw, 3.3rem);
+    line-height:1.04;
+    margin:.35em 0 .45em;
+  }
+  .lead .dek{
+    font-family:"Playfair Display", serif;
+    font-style:italic;
+    font-size:1.18rem;
+    line-height:1.45;
+    border-bottom:1px solid var(--rule);
+    padding-bottom:.9em;
+    margin-bottom:.9em;
+  }
+  .byline{
+    font-size:.74rem;
+    text-transform:uppercase;
+    letter-spacing:.16em;
+    margin-bottom:1.1em;
+  }
+  .byline b{font-weight:700;}
+  figure.press-photo{margin:0 0 1.1em;}
+  figure.press-photo img{
+    width:100%;
+    filter:grayscale(1) contrast(1.12) brightness(1.04) sepia(.22);
+    border:1px solid var(--rule);
+  }
+  figure.press-photo figcaption{
+    font-style:italic;
+    font-size:.86rem;
+    color:var(--ink-soft);
+    padding-top:.45em;
+    border-bottom:1px solid var(--rule);
+    padding-bottom:.6em;
+  }
+  .lead-cols{
+    column-count:2;
+    column-gap:26px;
+    column-rule:1px solid var(--rule);
+    text-align:justify;
+    hyphens:auto;
+  }
+  .lead-cols p{margin-bottom:.85em;}
+  .lead-cols p:first-child::first-letter{
+    font-family:"Playfair Display", serif;
+    font-weight:900;
+    float:left;
+    font-size:3.6em;
+    line-height:.82;
+    padding:.04em .08em 0 0;
+  }
+  .jumpline{
+    text-align:right;
+    font-style:italic;
+    font-size:.92rem;
+    margin-top:.4em;
+  }
+  .jumpline a{font-weight:700;}
+
+  /* ---------- правая колонка ---------- */
+  .sidebar{padding-left:26px;display:flex;flex-direction:column;gap:0;}
+  .about{border:3px double var(--rule);padding:18px 18px 16px;margin-bottom:24px;}
+  .about h3, .panel h3{
+    font-family:"Playfair Display", serif;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.2em;
+    font-size:.8rem;
+    text-align:center;
+    border-bottom:1px solid var(--rule);
+    padding-bottom:.7em;
+    margin-bottom:.8em;
+  }
+  .about p{font-size:.95rem;margin-bottom:.7em;text-align:justify;hyphens:auto;}
+  .about p:last-child{margin-bottom:0;}
+  .about .role{
+    text-align:center;
+    font-family:"Playfair Display", serif;
+    font-style:italic;
+    font-size:1.12rem;
+    margin-bottom:.7em;
+  }
+  .panel{border-top:3px solid var(--rule);padding-top:14px;}
+  .addr{list-style:none;}
+  .addr li{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    gap:10px;
+    padding:.5em 0;
+    border-bottom:1px dotted var(--ink-faint);
+    font-size:.93rem;
+  }
+  .addr li:last-child{border-bottom:0;}
+  .addr a{font-weight:700;}
+  .addr .note{font-style:italic;font-size:.8rem;color:var(--ink-soft);text-align:right;white-space:nowrap;}
+
+  /* ---------- заметки номера ---------- */
+  section.issue-notes{margin-top:34px;}
+  .section-head{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    margin-bottom:14px;
+  }
+  .section-head::before,.section-head::after{
+    content:"";flex:1;border-top:1px solid var(--rule);
+  }
+  .section-head h2{
+    font-family:"Playfair Display", serif;
+    font-weight:900;
+    text-transform:uppercase;
+    letter-spacing:.24em;
+    font-size:1.05rem;
+    white-space:nowrap;
+  }
+  .section-sub{
+    text-align:center;
+    font-style:italic;
+    font-size:.9rem;
+    color:var(--ink-soft);
+    margin-bottom:18px;
+  }
+  .notes-cols{
+    column-count:3;
+    column-gap:28px;
+    column-rule:1px solid var(--rule);
+    border-top:3px solid var(--rule);
+    border-bottom:3px solid var(--rule);
+    padding:18px 0;
+  }
+  .note{
+    break-inside:avoid;
+    padding-bottom:.9em;
+    margin-bottom:.9em;
+    border-bottom:1px dotted var(--ink-faint);
+  }
+  .note:last-child{border-bottom:0;margin-bottom:0;}
+  .note .date{
+    font-size:.68rem;
+    text-transform:uppercase;
+    letter-spacing:.2em;
+    color:var(--ink-soft);
+    display:block;
+    margin-bottom:.25em;
+  }
+  .note a{
+    font-family:"Playfair Display", serif;
+    font-weight:700;
+    font-size:1.08rem;
+    line-height:1.25;
+    display:block;
+  }
+  .note .tease{font-size:.86rem;font-style:italic;color:var(--ink-soft);margin-top:.2em;}
+
+  /* ---------- телепрограмма ---------- */
+  section.tv{margin-top:36px;}
+  .tv-wrap{
+    display:grid;
+    grid-template-columns:1.35fr 1fr;
+    border:3px double var(--rule);
+  }
+  .tv-featured{padding:18px 22px;border-right:1px solid var(--rule);}
+  .tv-featured .chan{
+    font-size:.68rem;text-transform:uppercase;letter-spacing:.22em;font-weight:700;
+    border-bottom:1px solid var(--rule);padding-bottom:.5em;margin-bottom:.8em;display:block;
+  }
+  .tv-featured img{
+    width:100%;
+    border:1px solid var(--rule);
+    filter:grayscale(1) contrast(1.15) sepia(.2);
+  }
+  .tv-featured:hover img{filter:none;}
+  .tv-featured h3{
+    font-family:"Playfair Display", serif;
+    font-weight:700;
+    font-size:1.25rem;
+    line-height:1.25;
+    margin-top:.6em;
+  }
+  .tv-featured .when{font-style:italic;font-size:.86rem;color:var(--ink-soft);margin-top:.3em;}
+  .tv-list{list-style:none;display:flex;flex-direction:column;}
+  .tv-list li{flex:1;border-bottom:1px solid var(--rule);}
+  .tv-list li:last-child{border-bottom:0;}
+  .tv-list a{
+    display:flex;gap:14px;align-items:center;
+    padding:12px 16px;height:100%;
+  }
+  .tv-list img{
+    width:96px;height:54px;object-fit:cover;flex:none;
+    border:1px solid var(--rule);
+    filter:grayscale(1) contrast(1.15) sepia(.2);
+  }
+  .tv-list a:hover img{filter:none;}
+  .tv-list .t{font-weight:700;font-size:.92rem;line-height:1.3;}
+  .tv-list .d{font-style:italic;font-size:.78rem;color:var(--ink-soft);margin-top:.2em;}
+
+  /* ---------- подвал ---------- */
+  footer{margin-top:40px;}
+  .colophon{
+    text-align:center;
+    font-size:.78rem;
+    color:var(--ink-soft);
+    padding:14px 0 0;
+    line-height:1.7;
+  }
+  .colophon .links a{font-weight:700;white-space:nowrap;}
+  .colophon .links{text-transform:uppercase;letter-spacing:.12em;font-size:.7rem;}
+  .colophon .sep{margin:0 .55em;}
+
+  /* ---------- мобильная вёрстка ---------- */
+  @media (max-width:880px){
+    body{padding:0 16px 40px;font-size:16px;}
+    .front{grid-template-columns:1fr;}
+    .lead{padding-right:0;border-right:0;border-bottom:3px solid var(--rule);padding-bottom:22px;}
+    .sidebar{padding-left:0;padding-top:22px;}
+    .lead-cols{column-count:1;}
+    .notes-cols{column-count:1;}
+    .tv-wrap{grid-template-columns:1fr;}
+    .tv-featured{border-right:0;border-bottom:1px solid var(--rule);}
+    .ears{flex-direction:column;gap:2px;text-align:center;}
+    .ears span, .ears span:last-child{text-align:center;}
+    .subline{flex-wrap:wrap;justify-content:center;text-align:center;}
+  }
+  @media (min-width:881px) and (max-width:1024px){
+    .notes-cols{column-count:2;}
+  }
+</style>
+</head>
+<body>
+
+  <!-- уши -->
+  <div class="ears">
+    <span>Среда, 10 июня 2026 г.</span>
+    <span>Основана в эпоху агентов · Выходит по мере накопления контекста</span>
+    <span>№ 24 (161) · Цена свободная</span>
+  </div>
+
+  <!-- мастхед -->
+  <header class="masthead">
+    <h1><a href="index.html">СЕРЕЖА&nbsp;РИС</a></h1>
+    <p class="motto">«Не пиши код руками — направляй агентов»</p>
+  </header>
+  <div class="masthead-rule"></div>
+  <div class="subline">
+    <span>Вайбкодинг</span>
+    <span>Claude Code</span>
+    <span>Агентные системы</span>
+    <span>AI-инструменты</span>
+    <span>sereja.tech</span>
+  </div>
+
+  <!-- первая полоса -->
+  <main class="front">
+    <article class="lead">
+      <span class="rubric">Передовица · Срочно в номер</span>
+      <h2><a href="post.html">Перешёл на Claude Fable&nbsp;5: цены, effort, кейсы</a></h2>
+      <p class="dek">Anthropic выпускает новый класс моделей Mythos — четвёртый в иерархии. Наш редактор провёл стрим в день релиза: шутер с деплоем за полчаса, арканоид с управлением рукой, клон Majesty — и поучительный конфуз с 32 агентами.</p>
+      <p class="byline">От нашего корреспондента · <b>Сережа Рис</b> · 10 июня 2026 г.</p>
+      <figure class="press-photo">
+        <img src="/static/images/blog/fable5-dust-arena-ingame.png" alt="Dust Arena — low-poly FPS от первого лица, карта de_dust">
+        <figcaption>Dust Arena: онлайн-шутер по мотивам de_dust, собранный агентом на Fable 5 за тридцать минут прямого эфира. Фот. редакции.</figcaption>
+      </figure>
+      <div class="lead-cols">
+        <p>Вчера, 9 июня, Anthropic выпустила Claude Fable 5 — новый класс моделей под названием Mythos, четвёртый в иерархии после Haiku, Sonnet и Opus. Для вайбкодера это значит одно: появилась новая рабочая модель, на которую есть смысл пересесть, если задача поставлена чётко.</p>
+        <p>По прайсу — вдвое дороже Opus, однако отдача с одной задачи выходит выгоднее. На страницах номера: полная таблица цен, пять effort-режимов, бенчмарки со здоровым скепсисом, четыре собранных в эфире проекта и пять скиллов, которые модель построила себе сама — без указаний сверху.</p>
+        <p>Главный вывод дня, впрочем, не про модель: качество инструмента умножается на качество задачи. Чем мощнее агент, тем больнее он умножает плохую постановку.</p>
+      </div>
+      <p class="jumpline"><a href="post.html">Продолжение — на странице статьи →</a></p>
+    </article>
+
+    <aside class="sidebar">
+      <div class="about">
+        <h3>От издателя</h3>
+        <p class="role">Сережа Рис, вайбкодер</p>
+        <p>Архитектор агентных систем на Claude Code. Не пишет код руками — направляет AI-агентов через промпты и наблюдает, как они строят софт, игры и самих себя.</p>
+        <p>Издаёт телеграм-канал «рис. AI», ведёт YouTube-обозрение и держит сообщество вайбкодеров числом свыше двух тысяч душ.</p>
+      </div>
+      <div class="panel">
+        <h3>Адреса редакции</h3>
+        <ul class="addr">
+          <li><a href="https://t.me/ris_ai">рис. AI</a><span class="note">тг-канал</span></li>
+          <li><a href="https://t.me/vibecod3rs">Сообщество Вайбкодеров</a><span class="note">2000+ человек</span></li>
+          <li><a href="https://www.youtube.com/@serejaris">YouTube</a><span class="note">обозрение</span></li>
+          <li><a href="https://vibecoding.phd">Кружок Вайбкодинга</a><span class="note">vibecoding.phd</span></li>
+          <li><a href="https://hsl.sh">HSL — AI-студия</a><span class="note">hsl.sh</span></li>
+          <li><a href="https://x.com/riiiiiiiiss">Twitter</a><span class="note">депеши</span></li>
+          <li><a href="https://github.com/serejaris">GitHub</a><span class="note">архив рукописей</span></li>
+        </ul>
+      </div>
+    </aside>
+  </main>
+
+  <!-- заметки номера -->
+  <section class="issue-notes">
+    <div class="section-head"><h2>Заметки прежних выпусков</h2></div>
+    <p class="section-sub">Хроника наблюдений за агентами, моделями и инструментами — в порядке поступления в набор</p>
+    <div class="notes-cols">
+      <article class="note">
+        <span class="date">30 апреля 2026</span>
+        <a href="#">OTel для Claude Code — рентген твоих скиллов</a>
+        <p class="tease">Телеметрия вскрывает, что агент делает на самом деле.</p>
+      </article>
+      <article class="note">
+        <span class="date">27 апреля 2026</span>
+        <a href="#">Свой Miro за 30 минут вместо подписки</a>
+        <p class="tease">Холст по цене одного промпта.</p>
+      </article>
+      <article class="note">
+        <span class="date">22 апреля 2026</span>
+        <a href="#">Как трекать задачи агентом в нескольких репо</a>
+      </article>
+      <article class="note">
+        <span class="date">22 апреля 2026</span>
+        <a href="#">Как я научил Claude Code писать техно-музыку</a>
+        <p class="tease">Секвенсор из промптов и упрямства.</p>
+      </article>
+      <article class="note">
+        <span class="date">8 апреля 2026</span>
+        <a href="#">Как я включил Claude Code в режим без вопросов</a>
+      </article>
+      <article class="note">
+        <span class="date">29 марта 2026</span>
+        <a href="#">Написал скилл для аудита продукта в Claude Code</a>
+      </article>
+      <article class="note">
+        <span class="date">27 марта 2026</span>
+        <a href="#">Эту статью написал мой агент по тикету</a>
+        <p class="tease">Редакция снимает с себя ответственность — и гордится.</p>
+      </article>
+      <article class="note">
+        <span class="date">19 марта 2026</span>
+        <a href="#">Software for One: софт, который нужен только тебе</a>
+      </article>
+      <article class="note">
+        <span class="date">16 марта 2026</span>
+        <a href="#">Слои контекста: организуем файлы по скорости изменения</a>
+      </article>
+      <article class="note">
+        <span class="date">14 марта 2026</span>
+        <a href="#">AGENTS.md: дружим Claude Code с Codex</a>
+      </article>
+      <article class="note">
+        <span class="date">12 марта 2026</span>
+        <a href="#">NotebookLM + Claude Code: бесплатный RAG за 5 минут</a>
+      </article>
+      <article class="note">
+        <span class="date">5 марта 2026</span>
+        <a href="#">Symphony: демон на Elixir раздаёт задачи Codex</a>
+      </article>
+      <article class="note">
+        <span class="date">5 марта 2026</span>
+        <a href="#">Haiku, Sonnet, Opus: какую модель ставить субагенту</a>
+      </article>
+      <article class="note">
+        <span class="date">4 марта 2026</span>
+        <a href="#">Как я собрал совет директоров из субагентов</a>
+        <p class="tease">Правление заседает в параллельных контекстах.</p>
+      </article>
+    </div>
+  </section>
+
+  <!-- телепрограмма -->
+  <section class="tv">
+    <div class="section-head"><h2>Телепрограмма</h2></div>
+    <p class="section-sub">Канал «Сережа Рис» — вещание по адресу youtube.com/@serejaris</p>
+    <div class="tv-wrap">
+      <a class="tv-featured" href="https://www.youtube.com/watch?v=eguZQ4MAh8U">
+        <span class="chan">В эфире · Последний выпуск · 9 июня 2026</span>
+        <img src="https://i.ytimg.com/vi/eguZQ4MAh8U/mqdefault.jpg" alt="Claude Fable 5: тесты, бенчмарки и разбор нового AI-релиза Anthropic">
+        <h3>Claude Fable 5: тесты, бенчмарки и разбор нового AI-релиза Anthropic</h3>
+        <p class="when">Прямая трансляция в день релиза — та самая, из передовицы номера.</p>
+      </a>
+      <ul class="tv-list">
+        <li>
+          <a href="https://www.youtube.com/watch?v=05xs_kyacxI">
+            <img src="https://i.ytimg.com/vi/05xs_kyacxI/mqdefault.jpg" alt="GPT Image 2: разбор новой модели OpenAI">
+            <span><span class="t">GPT Image 2: разбор новой модели OpenAI</span><br><span class="d">21 апреля 2026</span></span>
+          </a>
+        </li>
+        <li>
+          <a href="https://www.youtube.com/watch?v=yX9-bOj1Mu0">
+            <img src="https://i.ytimg.com/vi/yX9-bOj1Mu0/mqdefault.jpg" alt="Claude Design: обзор нового AI для дизайна">
+            <span><span class="t">Claude Design: обзор нового AI для дизайна, прототипов и презентаций</span><br><span class="d">17 апреля 2026</span></span>
+          </a>
+        </li>
+        <li>
+          <a href="https://www.youtube.com/watch?v=tqDBIhMjo8w">
+            <img src="https://i.ytimg.com/vi/tqDBIhMjo8w/mqdefault.jpg" alt="Claude Opus 4.7, обзор и вайбкодинг тесты">
+            <span><span class="t">Claude Opus 4.7, обзор, вайбкодинг тесты, сравнение с GPT 5.4</span><br><span class="d">16 апреля 2026</span></span>
+          </a>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- подвал -->
+  <footer>
+    <hr class="double">
+    <div class="colophon">
+      <p class="links">
+        <a href="https://t.me/ris_ai">рис. AI</a><span class="sep">·</span>
+        <a href="https://t.me/vibecod3rs">Вайбкодеры</a><span class="sep">·</span>
+        <a href="https://www.youtube.com/@serejaris">YouTube</a><span class="sep">·</span>
+        <a href="https://vibecoding.phd">Кружок Вайбкодинга</a><span class="sep">·</span>
+        <a href="https://hsl.sh">HSL</a><span class="sep">·</span>
+        <a href="https://x.com/riiiiiiiiss">Twitter</a><span class="sep">·</span>
+        <a href="https://github.com/serejaris">GitHub</a>
+      </p>
+      <p>Газета «Сережа Рис». Набрано агентами, свёрстано без единой тени и скругления.<br>
+      Рукописи не рецензируются — их читает Claude Code. Перепечатка приветствуется со ссылкой на sereja.tech.</p>
+    </div>
+  </footer>
+
+</body>
+</html>

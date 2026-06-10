@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SEREJA &lt;GO&gt; — терминал вайбкодера</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#000000;
+  --panel:#0a0804;
+  --amber:#ff9e00;
+  --amber-bright:#ffc14d;
+  --amber-dim:#9a6a14;
+  --amber-faint:#5c400f;
+  --green:#1aef6e;
+  --red:#ff453a;
+  --white:#f5e9d0;
+  --line:#3a2a08;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{font-size:13px}
+body{
+  background:var(--bg);
+  color:var(--amber);
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-variant-numeric:tabular-nums;
+  line-height:1.45;
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+}
+::selection{background:var(--amber);color:#000}
+a{color:inherit;text-decoration:none}
+.num{font-variant-numeric:tabular-nums}
+
+/* ===== TICKER ===== */
+.ticker-wrap{
+  border-bottom:1px solid var(--line);
+  overflow:hidden;
+  background:#070502;
+  white-space:nowrap;
+  position:relative;
+}
+.ticker{
+  display:inline-block;
+  padding:.45rem 0;
+  animation:tick 38s linear infinite;
+  will-change:transform;
+}
+.ticker-wrap:hover .ticker{animation-play-state:paused}
+@keyframes tick{
+  0%{transform:translateX(0)}
+  100%{transform:translateX(-50%)}
+}
+.tk{display:inline-block;padding:0 1.4rem;font-size:.95rem;letter-spacing:.02em}
+.tk b{color:var(--amber-bright);font-weight:700}
+.tk .px{color:var(--white)}
+.up{color:var(--green)}
+.dn{color:var(--red)}
+.tk .sep{color:var(--amber-faint)}
+
+/* ===== COMMAND BAR ===== */
+.cmdbar{
+  display:flex;align-items:center;gap:1rem;
+  padding:.5rem .9rem;
+  border-bottom:1px solid var(--line);
+  background:#0d0900;
+  flex-wrap:wrap;
+}
+.cmdbar .prompt{color:var(--green);font-weight:700}
+.cmdbar .cmd{color:var(--white);font-weight:600;letter-spacing:.06em}
+.cursor{
+  display:inline-block;width:.62em;height:1.05em;
+  background:var(--amber);vertical-align:-0.15em;
+  animation:blink 1.06s steps(1) infinite;
+}
+@keyframes blink{50%{opacity:0}}
+.cmdbar .meta{margin-left:auto;display:flex;gap:1.2rem;font-size:.85rem;color:var(--amber-dim)}
+.cmdbar .meta .live{color:var(--green)}
+@media(max-width:700px){.cmdbar .meta{margin-left:0;width:100%}}
+
+/* ===== GRID ===== */
+.grid{
+  flex:1;
+  display:grid;
+  grid-template-columns:300px 1fr 340px;
+  gap:6px;
+  padding:6px;
+}
+@media(max-width:1100px){.grid{grid-template-columns:280px 1fr}.col-right{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:6px}}
+@media(max-width:780px){.grid{grid-template-columns:1fr}.col-right{grid-template-columns:1fr}}
+
+.panel{
+  border:1px solid var(--line);
+  background:var(--panel);
+  display:flex;flex-direction:column;
+  min-width:0;
+}
+.panel-h{
+  display:flex;justify-content:space-between;align-items:baseline;
+  padding:.4rem .7rem;
+  background:#160f02;
+  border-bottom:1px solid var(--line);
+  font-size:.85rem;letter-spacing:.1em;
+  color:var(--amber-bright);font-weight:700;
+  text-transform:uppercase;
+}
+.panel-h .go{color:var(--green);font-weight:700}
+.panel-h .hint{color:var(--amber-faint);font-weight:400;letter-spacing:0;text-transform:none}
+.panel-b{padding:.7rem;flex:1}
+.col{display:flex;flex-direction:column;gap:6px;min-width:0}
+
+/* ===== IDENTITY ===== */
+.id-name{font-size:1.25rem;font-weight:700;color:var(--white);letter-spacing:.04em}
+.id-tag{color:var(--green);font-size:.85rem;margin-bottom:.7rem}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:.15rem .8rem;font-size:.85rem}
+.kv dt{color:var(--amber-dim)}
+.kv dd{color:var(--white)}
+.id-desc{margin-top:.8rem;padding-top:.7rem;border-top:1px dashed var(--line);font-size:.85rem;color:var(--amber);line-height:1.55}
+.id-desc em{color:var(--amber-bright);font-style:normal;font-weight:600}
+.stat-row{display:flex;gap:1.4rem;margin-top:.8rem;padding-top:.7rem;border-top:1px dashed var(--line)}
+.stat .v{font-size:1.15rem;font-weight:700;color:var(--white)}
+.stat .l{font-size:.72rem;color:var(--amber-dim);text-transform:uppercase;letter-spacing:.08em}
+.stat .v .up{font-size:.8rem}
+
+/* ===== TOP STORY ===== */
+.story{display:block;padding:.9rem .9rem 1rem;position:relative}
+.story:hover{background:#140d02}
+.story .flag{
+  display:inline-block;background:var(--red);color:#fff;
+  font-size:.7rem;font-weight:700;letter-spacing:.14em;
+  padding:.12rem .55rem;margin-bottom:.55rem;
+}
+.story h1{
+  font-size:1.7rem;line-height:1.2;color:var(--white);
+  font-weight:700;margin-bottom:.5rem;
+}
+.story h1 .tick{color:var(--amber-bright)}
+.story .lede{font-size:.92rem;color:var(--amber);max-width:62ch;margin-bottom:.7rem}
+.story .meta{font-size:.8rem;color:var(--amber-dim);display:flex;gap:1.2rem;flex-wrap:wrap}
+.story .meta .up{font-weight:600}
+.story .read{
+  position:absolute;right:.9rem;top:.9rem;
+  color:var(--green);font-size:.8rem;font-weight:700;letter-spacing:.08em;
+}
+@media(max-width:600px){.story .read{position:static;display:inline-block;margin-top:.5rem}.story h1{font-size:1.3rem}}
+
+/* ===== FEED ===== */
+.feed{width:100%;border-collapse:collapse;font-size:.88rem}
+.feed td{padding:.34rem .7rem;border-bottom:1px solid #1c1404;vertical-align:baseline}
+.feed tr:last-child td{border-bottom:none}
+.feed tr:hover td{background:#161003;color:var(--amber-bright)}
+.feed .ts{color:var(--amber-dim);white-space:nowrap;width:1%}
+.feed .ttl{color:var(--white)}
+.feed tr:hover .ttl{color:var(--amber-bright)}
+.feed .tag{color:var(--amber-dim);font-size:.74rem;white-space:nowrap;text-align:right;width:1%}
+@media(max-width:600px){.feed .tag{display:none}}
+
+/* ===== VIDEO QUOTES ===== */
+.vq{display:flex;gap:.7rem;padding:.55rem .7rem;border-bottom:1px solid #1c1404;align-items:flex-start}
+.vq:last-child{border-bottom:none}
+.vq:hover{background:#161003}
+.vq img{
+  width:96px;height:54px;object-fit:cover;flex-shrink:0;
+  filter:grayscale(1) sepia(1) saturate(2.6) hue-rotate(-12deg) brightness(.92) contrast(1.05);
+  border:1px solid var(--line);
+}
+.vq .t{font-size:.82rem;color:var(--white);line-height:1.35}
+.vq:hover .t{color:var(--amber-bright)}
+.vq .d{font-size:.74rem;color:var(--amber-dim);margin-top:.2rem}
+.vq .d .up{margin-left:.5rem}
+.vq.feat{border-left:3px solid var(--amber);background:#120c02}
+.vq.feat img{width:128px;height:72px}
+
+/* ===== LINKS ===== */
+.lnk{width:100%;border-collapse:collapse;font-size:.86rem}
+.lnk td{padding:.36rem .7rem;border-bottom:1px solid #1c1404;vertical-align:baseline}
+.lnk tr:last-child td{border-bottom:none}
+.lnk tr:hover td{background:#161003}
+.lnk .code{color:var(--amber-bright);font-weight:700;white-space:nowrap;width:1%}
+.lnk .nm{color:var(--white)}
+.lnk tr:hover .nm{color:var(--amber-bright)}
+.lnk .nt{color:var(--amber-dim);font-size:.76rem;text-align:right;white-space:nowrap}
+@media(max-width:600px){.lnk .nt{display:none}}
+
+/* ===== FKEYS ===== */
+.fkeys{
+  display:grid;grid-template-columns:repeat(10,1fr);
+  border-top:1px solid var(--line);
+  background:#0d0900;
+}
+.fk{
+  padding:.4rem .3rem;text-align:center;
+  border-right:1px solid #1c1404;
+  font-size:.72rem;color:var(--amber-dim);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.fk:last-child{border-right:none}
+.fk b{color:var(--amber-bright);display:block;font-size:.78rem}
+.fk:hover{background:var(--amber);cursor:pointer}
+.fk:hover b,.fk:hover{color:#000}
+@media(max-width:780px){.fkeys{grid-template-columns:repeat(5,1fr)}.fk{border-bottom:1px solid #1c1404}}
+
+.scanline{position:fixed;inset:0;pointer-events:none;z-index:9;
+  background:repeating-linear-gradient(0deg,transparent 0 2px,rgba(0,0,0,.12) 2px 3px);}
+</style>
+</head>
+<body>
+
+<div class="scanline" aria-hidden="true"></div>
+
+<!-- TICKER -->
+<div class="ticker-wrap" aria-label="Котировки моделей">
+  <div class="ticker" id="ticker">
+    <span class="tk"><b>FBL5</b> <span class="px">$10/$50</span> <span class="up">▲NEW</span> <span class="sep">·</span></span>
+    <span class="tk"><b>OPUS 4.8</b> <span class="px">$5/$25</span> <span class="sep">·</span></span>
+    <span class="tk"><b>SONNET 4.6</b> <span class="px">$3/$15</span> <span class="sep">·</span></span>
+    <span class="tk"><b>HAIKU 4.5</b> <span class="px">$1/$5</span> <span class="sep">·</span></span>
+    <span class="tk"><b>GPT-5.5</b> <span class="px">$5/$30</span> <span class="sep">·</span></span>
+    <span class="tk"><b>GPT-5.5-PRO</b> <span class="px">$30/$180</span> <span class="dn">▼EXP</span> <span class="sep">·</span></span>
+    <span class="tk"><b>GEMINI 3.1 PRO</b> <span class="px">$2/$12</span> <span class="sep">·</span></span>
+    <span class="tk"><b>CTX</b> <span class="px">1M TOK</span> <span class="up">▲128K OUT</span> <span class="sep">·</span></span>
+  </div>
+</div>
+
+<!-- COMMAND BAR -->
+<div class="cmdbar">
+  <span><span class="prompt">&gt;</span> <span class="cmd">SEREJA &lt;GO&gt;</span><span class="cursor"></span></span>
+  <div class="meta">
+    <span class="live">● LIVE</span>
+    <span id="clock" class="num">2026-06-10 00:00:00 MSK</span>
+    <span>SESSION: VIBECODE</span>
+  </div>
+</div>
+
+<!-- GRID -->
+<main class="grid">
+
+  <!-- LEFT: IDENTITY -->
+  <div class="col">
+    <section class="panel">
+      <div class="panel-h"><span>USER &lt;GO&gt;</span><span class="hint">профиль</span></div>
+      <div class="panel-b">
+        <div class="id-name">СЕРЕЖА РИС</div>
+        <div class="id-tag">RIS:VIBECODER ▲ ACTIVE</div>
+        <dl class="kv">
+          <dt>РОЛЬ</dt><dd>архитектор агентных систем</dd>
+          <dt>СТЕК</dt><dd>Claude Code / Fable 5</dd>
+          <dt>СЕКТОР</dt><dd>вайбкодинг, AI-агенты</dd>
+          <dt>ДЕСК</dt><dd>sereja.tech</dd>
+        </dl>
+        <p class="id-desc">Направляю AI-агентов через промпты, не пишу код руками. Веду <em>телеграм-канал</em>, <em>YouTube</em> и сообщество вайбкодеров — <em>2000+ человек</em>. Здесь — лента сделок с моделями: что купил, что окупилось.</p>
+        <div class="stat-row">
+          <div class="stat"><div class="v num">15</div><div class="l">постов YTD</div></div>
+          <div class="stat"><div class="v num">2000<span class="up">+</span></div><div class="l">комьюнити</div></div>
+          <div class="stat"><div class="v num">4</div><div class="l">видео Q2</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-h"><span>POS &lt;GO&gt;</span><span class="hint">позиция</span></div>
+      <div class="panel-b">
+        <dl class="kv">
+          <dt>LONG</dt><dd><span class="up">FBL5 · xhigh</span></dd>
+          <dt>HEDGE</dt><dd>Sonnet 4.6 / Haiku 4.5</dd>
+          <dt>CLOSED</dt><dd><span class="dn">fan-out 32 агента</span></dd>
+          <dt>COST/TASK</dt><dd><span class="up">▲ выгоднее Opus</span></dd>
+        </dl>
+      </div>
+    </section>
+  </div>
+
+  <!-- CENTER: TOP STORY + BLOG -->
+  <div class="col">
+    <section class="panel">
+      <div class="panel-h"><span>TOP STORY</span><span class="hint">главное</span></div>
+      <a class="story" href="post.html">
+        <span class="flag">▲ BREAKING · 2026-06-10</span>
+        <span class="read">READ &lt;GO&gt; →</span>
+        <h1>Перешёл на <span class="tick">CLAUDE FABLE 5</span>: цены, effort, кейсы</h1>
+        <p class="lede">Новый класс Mythos, четвёртый в иерархии. $10/$50 за 1M токенов — вдвое дороже Opus, но cost per task сходится. Стрим в день релиза: шутер с деплоем за полчаса, арканоид рукой, клон Majesty и анти-кейс с 32 агентами.</p>
+        <span class="meta num">
+          <span>FBL5 <span class="up">$10/$50 ▲NEW</span></span>
+          <span>EFFORT: XHIGH</span>
+          <span>ANALYST: RIS</span>
+          <span>REF: EGUZQ4MAH8U</span>
+        </span>
+      </a>
+    </section>
+
+    <section class="panel">
+      <div class="panel-h"><span>BLOG &lt;GO&gt;</span><span class="hint">лента сделок · 15 записей</span></div>
+      <table class="feed">
+        <tr><td class="ts num">2026-06-10</td><td class="ttl"><a href="post.html">Перешёл на Claude Fable 5: цены, effort, кейсы <span class="up">▲NEW</span></a></td><td class="tag">FBL5</td></tr>
+        <tr><td class="ts num">2026-04-30</td><td class="ttl"><a href="#">OTel для Claude Code — рентген твоих скиллов</a></td><td class="tag">OTEL</td></tr>
+        <tr><td class="ts num">2026-04-27</td><td class="ttl"><a href="#">Свой Miro за 30 минут вместо подписки</a></td><td class="tag">S4ONE</td></tr>
+        <tr><td class="ts num">2026-04-22</td><td class="ttl"><a href="#">Как трекать задачи агентом в нескольких репо</a></td><td class="tag">OPS</td></tr>
+        <tr><td class="ts num">2026-04-22</td><td class="ttl"><a href="#">Как я научил Claude Code писать техно-музыку</a></td><td class="tag">AUDIO</td></tr>
+        <tr><td class="ts num">2026-04-08</td><td class="ttl"><a href="#">Как я включил Claude Code в режим без вопросов</a></td><td class="tag">CFG</td></tr>
+        <tr><td class="ts num">2026-03-29</td><td class="ttl"><a href="#">Написал скилл для аудита продукта в Claude Code</a></td><td class="tag">SKILL</td></tr>
+        <tr><td class="ts num">2026-03-27</td><td class="ttl"><a href="#">Эту статью написал мой агент по тикету</a></td><td class="tag">AGENT</td></tr>
+        <tr><td class="ts num">2026-03-19</td><td class="ttl"><a href="#">Software for One: софт, который нужен только тебе</a></td><td class="tag">S4ONE</td></tr>
+        <tr><td class="ts num">2026-03-16</td><td class="ttl"><a href="#">Слои контекста: организуем файлы по скорости изменения</a></td><td class="tag">CTX</td></tr>
+        <tr><td class="ts num">2026-03-14</td><td class="ttl"><a href="#">AGENTS.md: дружим Claude Code с Codex</a></td><td class="tag">CDX</td></tr>
+        <tr><td class="ts num">2026-03-12</td><td class="ttl"><a href="#">NotebookLM + Claude Code: бесплатный RAG за 5 минут</a></td><td class="tag">RAG</td></tr>
+        <tr><td class="ts num">2026-03-05</td><td class="ttl"><a href="#">Symphony: демон на Elixir раздаёт задачи Codex</a></td><td class="tag">SYMPH</td></tr>
+        <tr><td class="ts num">2026-03-05</td><td class="ttl"><a href="#">Haiku, Sonnet, Opus: какую модель ставить субагенту</a></td><td class="tag">COST</td></tr>
+        <tr><td class="ts num">2026-03-04</td><td class="ttl"><a href="#">Как я собрал совет директоров из субагентов</a></td><td class="tag">BOARD</td></tr>
+      </table>
+    </section>
+  </div>
+
+  <!-- RIGHT: VID + LINKS -->
+  <div class="col col-right">
+    <section class="panel">
+      <div class="panel-h"><span>VID &lt;GO&gt;</span><span class="hint">эфиры</span></div>
+      <div>
+        <a class="vq feat" href="https://www.youtube.com/watch?v=eguZQ4MAh8U" target="_blank" rel="noopener">
+          <img src="https://i.ytimg.com/vi/eguZQ4MAh8U/mqdefault.jpg" alt="Claude Fable 5 стрим" loading="lazy">
+          <div>
+            <div class="t">Claude Fable 5: тесты, бенчмарки и разбор нового AI-релиза Anthropic</div>
+            <div class="d num">2026-06-09 <span class="up">▲ FEATURED</span></div>
+          </div>
+        </a>
+        <a class="vq" href="https://www.youtube.com/watch?v=05xs_kyacxI" target="_blank" rel="noopener">
+          <img src="https://i.ytimg.com/vi/05xs_kyacxI/mqdefault.jpg" alt="GPT Image 2" loading="lazy">
+          <div>
+            <div class="t">GPT Image 2: разбор новой модели OpenAI</div>
+            <div class="d num">2026-04-21</div>
+          </div>
+        </a>
+        <a class="vq" href="https://www.youtube.com/watch?v=yX9-bOj1Mu0" target="_blank" rel="noopener">
+          <img src="https://i.ytimg.com/vi/yX9-bOj1Mu0/mqdefault.jpg" alt="Claude Design" loading="lazy">
+          <div>
+            <div class="t">Claude Design: обзор нового AI для дизайна, прототипов и презентаций</div>
+            <div class="d num">2026-04-17</div>
+          </div>
+        </a>
+        <a class="vq" href="https://www.youtube.com/watch?v=tqDBIhMjo8w" target="_blank" rel="noopener">
+          <img src="https://i.ytimg.com/vi/tqDBIhMjo8w/mqdefault.jpg" alt="Claude Opus 4.7" loading="lazy">
+          <div>
+            <div class="t">Claude Opus 4.7, обзор, вайбкодинг тесты, сравнение с GPT 5.4</div>
+            <div class="d num">2026-04-16</div>
+          </div>
+        </a>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-h"><span>LINKS &lt;GO&gt;</span><span class="hint">внешние</span></div>
+      <table class="lnk">
+        <tr><td class="code">TG</td><td class="nm"><a href="https://t.me/ris_ai" target="_blank" rel="noopener">рис. AI</a></td><td class="nt">канал</td></tr>
+        <tr><td class="code">CHAT</td><td class="nm"><a href="https://t.me/vibecod3rs" target="_blank" rel="noopener">Сообщество Вайбкодеров</a></td><td class="nt num">2000+ чел</td></tr>
+        <tr><td class="code">YT</td><td class="nm"><a href="https://www.youtube.com/@serejaris" target="_blank" rel="noopener">YouTube</a></td><td class="nt">@serejaris</td></tr>
+        <tr><td class="code">EDU</td><td class="nm"><a href="https://vibecoding.phd" target="_blank" rel="noopener">Кружок Вайбкодинга</a></td><td class="nt">vibecoding.phd</td></tr>
+        <tr><td class="code">HSL</td><td class="nm"><a href="https://hsl.sh" target="_blank" rel="noopener">HSL — AI-студия</a></td><td class="nt">hsl.sh</td></tr>
+        <tr><td class="code">X</td><td class="nm"><a href="https://x.com/riiiiiiiiss" target="_blank" rel="noopener">Twitter</a></td><td class="nt">@riiiiiiiiss</td></tr>
+        <tr><td class="code">GH</td><td class="nm"><a href="https://github.com/serejaris" target="_blank" rel="noopener">GitHub</a></td><td class="nt">serejaris</td></tr>
+      </table>
+    </section>
+  </div>
+</main>
+
+<!-- FKEYS -->
+<nav class="fkeys" aria-label="Функциональные клавиши">
+  <a class="fk" href="post.html"><b>F1</b>TOP STORY</a>
+  <a class="fk" href="#"><b>F2</b>BLOG</a>
+  <a class="fk" href="https://www.youtube.com/@serejaris" target="_blank" rel="noopener"><b>F3</b>VID</a>
+  <a class="fk" href="https://t.me/ris_ai" target="_blank" rel="noopener"><b>F4</b>TG</a>
+  <a class="fk" href="https://t.me/vibecod3rs" target="_blank" rel="noopener"><b>F5</b>CHAT</a>
+  <a class="fk" href="https://github.com/serejaris" target="_blank" rel="noopener"><b>F6</b>GITHUB</a>
+  <a class="fk" href="https://vibecoding.phd" target="_blank" rel="noopener"><b>F7</b>КРУЖОК</a>
+  <a class="fk" href="https://hsl.sh" target="_blank" rel="noopener"><b>F8</b>HSL</a>
+  <a class="fk" href="https://x.com/riiiiiiiiss" target="_blank" rel="noopener"><b>F9</b>TWITTER</a>
+  <a class="fk" href="#"><b>F10</b>RSS</a>
+</nav>
+
+<script>
+// дублируем содержимое тикера для бесшовного цикла
+(function(){
+  var t=document.getElementById('ticker');
+  t.innerHTML+=t.innerHTML;
+})();
+// живые часы MSK
+(function(){
+  var el=document.getElementById('clock');
+  function pad(n){return n<10?'0'+n:n}
+  function tick(){
+    var d=new Date(Date.now()+ (3*60+new Date().getTimezoneOffset())*60000);
+    el.textContent=d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '
+      +pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds())+' MSK';
+  }
+  tick();setInterval(tick,1000);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>sereja.tech — терминал вайбкодера</title>
+<meta name="description" content="Блог про вайбкодинг, Claude Code и агентные системы. Терминальный дашборд Серёжи Риса.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;0,800;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#050705;
+  --bg-panel:#070b08;
+  --bg-raise:#0a120c;
+  --green:#4af07a;
+  --green-bright:#8dffb0;
+  --green-dim:#1d5c35;
+  --fg:#a3d2b0;
+  --fg-dim:#54775f;
+  --fg-faint:#3a5544;
+  --amber:#ffb454;
+  --amber-dim:#8a5a20;
+  --red:#ff5f56;
+  --glow:0 0 10px rgba(74,240,122,.38);
+  --glow-amber:0 0 10px rgba(255,180,84,.35);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scrollbar-color:var(--green-dim) var(--bg)}
+body{
+  background:var(--bg);
+  color:var(--fg);
+  font-family:'JetBrains Mono',ui-monospace,monospace;
+  font-size:14px;
+  line-height:1.55;
+  min-height:100vh;
+  padding:10px 14px 64px;
+  overflow-x:hidden;
+}
+/* ---------- CRT ---------- */
+body::before{
+  content:"";position:fixed;inset:0;z-index:9000;pointer-events:none;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,.22) 0 1px,transparent 1px 3px);
+  mix-blend-mode:multiply;
+}
+body::after{
+  content:"";position:fixed;inset:0;z-index:9001;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 45%,transparent 58%,rgba(0,12,4,.55) 100%);
+  animation:crt-breathe 7s ease-in-out infinite;
+}
+@keyframes crt-breathe{0%,100%{opacity:.92}50%{opacity:1}}
+::selection{background:var(--amber);color:#0a0a00}
+a{color:var(--green);text-decoration:none}
+a:hover{background:var(--green);color:#021407;text-shadow:none}
+a:focus-visible{outline:1px dashed var(--amber);outline-offset:2px}
+
+/* ---------- topbar ---------- */
+.topbar{
+  display:flex;gap:0 16px;flex-wrap:wrap;align-items:baseline;
+  color:var(--fg-dim);font-size:12px;
+  border-bottom:1px solid var(--green-dim);
+  padding:2px 4px 6px;margin-bottom:14px;
+}
+.topbar .host{color:var(--green);font-weight:700;text-shadow:var(--glow)}
+.topbar .sess{color:var(--fg-dim)}
+.topbar .right{margin-left:auto;display:flex;gap:16px}
+.topbar .ok{color:var(--green)}
+.cursor{display:inline-block;width:.62em;height:1em;background:var(--green);
+  vertical-align:-0.15em;animation:blink 1.06s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+
+/* ---------- figlet ---------- */
+.figlet-wrap{text-align:center;margin:6px 0 4px;animation:boot .5s ease-out both}
+.figlet{
+  display:inline-block;text-align:left;
+  font-size:clamp(5px,1.72vw,15px);
+  line-height:1.18;letter-spacing:0;
+  color:var(--green);text-shadow:var(--glow);
+  white-space:pre;user-select:none;
+}
+.figlet .dot{color:var(--amber);text-shadow:var(--glow-amber)}
+.tagline{
+  text-align:center;color:var(--fg-dim);font-size:12.5px;margin:6px 0 18px;
+  animation:boot .5s .12s ease-out both;
+}
+.tagline b{color:var(--fg);font-weight:500}
+.tagline .sep{color:var(--green-dim)}
+
+/* ---------- panels ---------- */
+.grid{
+  display:grid;gap:18px 16px;max-width:1240px;margin:0 auto;
+  grid-template-columns:minmax(0,7fr) minmax(0,5fr);
+  grid-template-areas:
+    "who   links"
+    "feat  feat"
+    "posts video";
+}
+.panel{
+  position:relative;
+  border:1px solid var(--green-dim);
+  background:linear-gradient(180deg,var(--bg-panel),rgba(7,11,8,.4));
+  padding:16px 14px 12px;
+  min-width:0;
+  animation:boot .45s ease-out both;
+}
+.panel:nth-child(1){animation-delay:.10s}
+.panel:nth-child(2){animation-delay:.16s}
+.panel:nth-child(3){animation-delay:.22s}
+.panel:nth-child(4){animation-delay:.28s}
+.panel:nth-child(5){animation-delay:.34s}
+@keyframes boot{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.crn{
+  position:absolute;color:var(--green-dim);font-style:normal;
+  line-height:1;font-size:14px;background:var(--bg);z-index:2;user-select:none;
+}
+.crn.tl{top:-8px;left:-5px}.crn.tr{top:-8px;right:-5px}
+.crn.bl{bottom:-8px;left:-5px}.crn.br{bottom:-8px;right:-5px}
+.ptitle{
+  position:absolute;top:-10px;left:12px;z-index:3;
+  background:var(--bg);padding:0 2px;
+  color:var(--green);font-weight:700;font-size:13px;letter-spacing:.02em;
+  text-shadow:var(--glow);user-select:none;white-space:nowrap;
+}
+.ptitle .tick{color:var(--green-dim);font-weight:400}
+.ptitle .idx{color:var(--amber);text-shadow:var(--glow-amber)}
+.pmeta{
+  position:absolute;top:-10px;right:12px;z-index:3;
+  background:var(--bg);padding:0 2px;
+  color:var(--fg-faint);font-size:11.5px;white-space:nowrap;
+}
+.panel.hot{border-color:var(--amber-dim)}
+.panel.hot .crn{color:var(--amber-dim)}
+.panel.hot .ptitle{color:var(--amber);text-shadow:var(--glow-amber)}
+
+/* ---------- whoami ---------- */
+.p-who{grid-area:who}
+.kv{display:grid;grid-template-columns:11ch 1fr;gap:3px 10px;font-size:13px}
+.kv dt{color:var(--fg-faint);font-weight:500}
+.kv dd{color:var(--fg)}
+.kv dd b{color:var(--green-bright);font-weight:700}
+.kv dd .am{color:var(--amber)}
+.meter{margin-top:12px;border-top:1px dashed var(--green-dim);padding-top:9px;
+  font-size:12px;color:var(--fg-dim);display:grid;gap:3px}
+.meter .row{display:flex;gap:8px;align-items:baseline;white-space:nowrap;overflow:hidden}
+.meter .lbl{width:9ch;flex:none;color:var(--fg-faint)}
+.meter .bar{color:var(--green);letter-spacing:-.5px}
+.meter .bar .off{color:#15301f}
+.meter .val{color:var(--fg)}
+
+/* ---------- links ---------- */
+.p-links{grid-area:links}
+.tree{list-style:none;font-size:12.8px}
+.tree li{display:flex;gap:8px;align-items:baseline;padding:1.5px 0;min-width:0}
+.tree .br{color:var(--green-dim);flex:none}
+.tree a{flex:none;font-weight:500;padding:0 2px}
+.tree .desc{color:var(--fg-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tree .badge{color:var(--amber);font-size:11px}
+
+/* ---------- featured ---------- */
+.p-feat{grid-area:feat;padding:14px 16px 14px}
+.feat-inner{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.feat-log{flex:1 1 380px;min-width:0}
+.feat-stamp{color:var(--fg-faint);font-size:12px}
+.feat-stamp .new{color:var(--red);font-weight:700;animation:blink 1.2s steps(1) infinite}
+.feat-title{margin:4px 0 6px;font-size:clamp(17px,2.6vw,24px);line-height:1.25}
+.feat-title a{
+  color:var(--green-bright);font-weight:800;text-shadow:var(--glow);
+  text-decoration:none;
+}
+.feat-title a:hover{background:var(--green-bright);color:#021407;text-shadow:none}
+.feat-sub{color:var(--fg-dim);font-size:12.8px}
+.feat-sub .am{color:var(--amber)}
+.btn{
+  flex:none;display:inline-block;
+  border:1px solid var(--amber-dim);color:var(--amber);
+  padding:9px 18px;font-weight:700;font-size:13px;letter-spacing:.04em;
+  text-shadow:var(--glow-amber);white-space:nowrap;
+}
+.btn:hover{background:var(--amber);border-color:var(--amber);color:#1a0e00;text-shadow:none}
+.btn .k{color:var(--fg-faint);font-weight:400}
+.btn:hover .k{color:#1a0e00}
+
+/* ---------- posts ---------- */
+.p-posts{grid-area:posts;padding-bottom:8px}
+.ps-head{
+  display:flex;gap:0;color:var(--fg-faint);font-size:11.5px;font-weight:700;
+  letter-spacing:.06em;border-bottom:1px solid var(--green-dim);
+  padding:0 6px 5px;margin-bottom:4px;
+}
+.ps-head .c-st{width:5ch;flex:none}
+.ps-head .c-pid{width:12ch;flex:none}
+.plist{list-style:none}
+.post-row{display:block}
+.post-row a{
+  display:flex;align-items:baseline;color:var(--fg);
+  padding:3px 6px;font-size:13px;min-width:0;
+}
+.post-row .st{width:5ch;flex:none;color:var(--fg-faint)}
+.post-row .pid{width:12ch;flex:none;color:var(--fg-dim)}
+.post-row .cmd{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.post-row a:hover,.post-row.sel a{
+  background:var(--bg-raise);color:var(--green-bright);text-shadow:var(--glow);
+  outline:1px solid var(--green-dim);
+}
+.post-row.sel a::before{
+  content:"❯";position:absolute;margin-left:-15px;color:var(--amber);
+  text-shadow:var(--glow-amber);
+}
+.post-row.run .st{color:var(--green);font-weight:700;text-shadow:var(--glow)}
+.post-row.run .cmd{color:var(--green-bright);font-weight:700}
+.post-row.run .pid{color:var(--amber)}
+.ps-foot{color:var(--fg-faint);font-size:11.5px;border-top:1px dashed var(--green-dim);
+  margin-top:6px;padding:6px 6px 0}
+
+/* ---------- video ---------- */
+.p-video{grid-area:video;display:flex;flex-direction:column;gap:10px}
+.vfeat{position:relative;border:1px solid var(--green-dim);background:#000}
+.vfeat iframe{display:block;width:100%;aspect-ratio:16/9;border:0}
+.vcap{color:var(--fg-dim);font-size:12px;padding:2px 2px 0}
+.vcap b{color:var(--fg);font-weight:500}
+.vcap .live{color:var(--red)}
+.vlist{list-style:none;display:grid;gap:7px;margin-top:2px}
+.vlist li{min-width:0}
+.vlist a{display:flex;gap:10px;align-items:center;color:var(--fg);min-width:0;padding:2px}
+.vlist a:hover{background:var(--bg-raise);color:var(--green-bright);outline:1px solid var(--green-dim)}
+.vlist img{width:80px;height:45px;object-fit:cover;flex:none;
+  border:1px solid var(--green-dim);filter:saturate(.7) contrast(1.05)}
+.vlist a:hover img{filter:none;border-color:var(--green)}
+.vmeta{min-width:0;font-size:12.3px;line-height:1.4}
+.vmeta .t{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vmeta .d{color:var(--fg-faint);font-size:11px}
+
+/* ---------- statusbar ---------- */
+.statusbar{
+  position:fixed;left:0;right:0;bottom:0;z-index:9100;
+  display:flex;align-items:center;gap:14px;
+  background:#03140a;border-top:1px solid var(--green-dim);
+  font-size:12px;padding:6px 14px;color:var(--fg-dim);
+  white-space:nowrap;overflow:hidden;
+}
+.statusbar .mode{
+  background:var(--green);color:#021407;font-weight:800;
+  padding:0 8px;letter-spacing:.08em;flex:none;
+}
+.statusbar .keys{display:flex;gap:14px;min-width:0;overflow:hidden}
+.statusbar kbd{
+  font-family:inherit;color:var(--amber);font-weight:700;
+  border:1px solid var(--amber-dim);padding:0 4px;font-size:11px;
+}
+.statusbar .clock{margin-left:auto;color:var(--green);flex:none;text-shadow:var(--glow)}
+.statusbar .path{color:var(--fg-faint);flex:none}
+
+footer.eof{
+  max-width:1240px;margin:26px auto 0;color:var(--fg-faint);font-size:11.5px;
+  display:flex;gap:16px;flex-wrap:wrap;
+}
+footer.eof .tilde{color:var(--green-dim)}
+
+/* ---------- mobile ---------- */
+@media (max-width:880px){
+  body{padding:8px 8px 86px;font-size:13px}
+  .grid{grid-template-columns:1fr;grid-template-areas:"feat" "who" "posts" "video" "links";gap:20px}
+  .topbar .sess,.topbar .up{display:none}
+  .post-row .st{display:none}
+  .ps-head .c-st{display:none}
+  .statusbar{flex-wrap:wrap;gap:8px;padding:6px 10px}
+  .statusbar .keys{gap:10px}
+  .statusbar .k-extra{display:none}
+  .feat-inner{gap:12px}
+  .btn{width:100%;text-align:center}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <span class="host">sereja@tech</span>
+  <span class="sess">tmux 0:dashboard*</span>
+  <span>~/blog</span>
+  <span class="up">uptime: 4 yrs vibecoding</span>
+  <span class="right">
+    <span class="ok">● ONLINE</span>
+    <span id="topdate">2026-06-10</span>
+    <span><span class="cursor"></span></span>
+  </span>
+</header>
+
+<div class="figlet-wrap">
+<pre class="figlet" aria-label="SEREJA.TECH">███████╗███████╗██████╗ ███████╗     ██╗ █████╗    ████████╗███████╗ ██████╗██╗  ██╗
+██╔════╝██╔════╝██╔══██╗██╔════╝     ██║██╔══██╗   ╚══██╔══╝██╔════╝██╔════╝██║  ██║
+███████╗█████╗  ██████╔╝█████╗       ██║███████║      ██║   █████╗  ██║     ███████║
+╚════██║██╔══╝  ██╔══██╗██╔══╝  ██   ██║██╔══██║      ██║   ██╔══╝  ██║     ██╔══██║
+███████║███████╗██║  ██║███████╗╚█████╔╝██║  ██║<span class="dot">██╗</span>   ██║   ███████╗╚██████╗██║  ██║
+╚══════╝╚══════╝╚═╝  ╚═╝╚══════╝ ╚════╝ ╚═╝  ╚═╝<span class="dot">╚═╝</span>   ╚═╝   ╚══════╝ ╚═════╝╚═╝  ╚═╝</pre>
+</div>
+<p class="tagline"><b>вайбкодинг</b> <span class="sep">│</span> <b>claude code</b> <span class="sep">│</span> <b>агентные системы</b> <span class="sep">──</span> личный терминал Серёжи Риса</p>
+
+<main class="grid">
+
+  <!-- ОБ АВТОРЕ -->
+  <section class="panel p-who" aria-label="Об авторе">
+    <i class="crn tl">┌</i><i class="crn tr">┐</i><i class="crn bl">└</i><i class="crn br">┘</i>
+    <span class="ptitle"><span class="tick">┤</span> <span class="idx">01</span>·WHOAMI <span class="tick">├</span></span>
+    <span class="pmeta">uid=1000(ris)</span>
+    <dl class="kv">
+      <dt>USER</dt><dd><b>Серёжа Рис</b> — вайбкодер</dd>
+      <dt>ROLE</dt><dd>архитектор агентных систем на <b>Claude Code</b></dd>
+      <dt>METHOD</dt><dd>направляет AI-агентов через промпты, <span class="am">не пишет код руками</span></dd>
+      <dt>SHIPS</dt><dd>тг-канал «рис. AI» · YouTube · сообщество 2000+ вайбкодеров · Кружок Вайбкодинга · AI-студия HSL</dd>
+    </dl>
+    <div class="meter" aria-hidden="true">
+      <div class="row"><span class="lbl">MODEL</span><span class="val">claude-fable-5 · effort=xhigh</span></div>
+      <div class="row"><span class="lbl">CONTEXT</span><span class="bar">█████████████████████<span class="off">█████</span></span><span class="val">810k/1M</span></div>
+      <div class="row"><span class="lbl">AGENTS</span><span class="bar">████████<span class="off">██████████████████</span></span><span class="val">9/32 · fan-out под контролем</span></div>
+      <div class="row"><span class="lbl">POSTS</span><span class="val">15 · VIDEOS 4 · SKILLS, рождённых агентом: 5</span></div>
+    </div>
+  </section>
+
+  <!-- ССЫЛКИ -->
+  <nav class="panel p-links" aria-label="Ссылки">
+    <i class="crn tl">┌</i><i class="crn tr">┐</i><i class="crn bl">└</i><i class="crn br">┘</i>
+    <span class="ptitle"><span class="tick">┤</span> <span class="idx">02</span>·UPLINKS <span class="tick">├</span></span>
+    <span class="pmeta">7 established</span>
+    <ul class="tree">
+      <li><span class="br">├─</span><a href="https://t.me/ris_ai">tg://ris_ai</a><span class="desc">рис. AI — телеграм-канал</span></li>
+      <li><span class="br">├─</span><a href="https://t.me/vibecod3rs">tg://vibecod3rs</a><span class="desc">Сообщество Вайбкодеров <span class="badge">2000+</span></span></li>
+      <li><span class="br">├─</span><a href="https://www.youtube.com/@serejaris">yt://@serejaris</a><span class="desc">YouTube — стримы и разборы</span></li>
+      <li><span class="br">├─</span><a href="https://vibecoding.phd">vibecoding.phd</a><span class="desc">Кружок Вайбкодинга</span></li>
+      <li><span class="br">├─</span><a href="https://hsl.sh">hsl.sh</a><span class="desc">HSL — AI-студия</span></li>
+      <li><span class="br">├─</span><a href="https://x.com/riiiiiiiiss">x://riiiiiiiiss</a><span class="desc">Twitter</span></li>
+      <li><span class="br">└─</span><a href="https://github.com/serejaris">gh://serejaris</a><span class="desc">GitHub — код и песочницы</span></li>
+    </ul>
+  </nav>
+
+  <!-- FEATURED -->
+  <section class="panel p-feat hot" aria-label="Свежий пост">
+    <i class="crn tl">┌</i><i class="crn tr">┐</i><i class="crn bl">└</i><i class="crn br">┘</i>
+    <span class="ptitle"><span class="tick">┤</span> <span class="idx">03</span>·TAIL -F LATEST <span class="tick">├</span></span>
+    <span class="pmeta">priority: realtime</span>
+    <div class="feat-inner">
+      <div class="feat-log">
+        <div class="feat-stamp">[2026-06-10 09:00] <span class="new">▮ NEW RELEASE</span> · день после анонса Anthropic</div>
+        <h1 class="feat-title"><a href="post.html">Перешёл на Claude Fable 5: цены, effort, кейсы</a></h1>
+        <p class="feat-sub">новый класс <span class="am">Mythos</span> · $10/$50 за Mtok · effort <span class="am">xhigh</span> · шутер с деплоем за 30 минут · анти-кейс на <span class="am">32 агентах</span> · 5 скиллов, которые агент построил себе сам</p>
+      </div>
+      <a class="btn" href="post.html">ОТКРЫТЬ ПОСТ <span class="k">[enter]</span></a>
+    </div>
+  </section>
+
+  <!-- ПОСТЫ -->
+  <section class="panel p-posts" aria-label="Все посты">
+    <i class="crn tl">┌</i><i class="crn tr">┐</i><i class="crn bl">└</i><i class="crn br">┘</i>
+    <span class="ptitle"><span class="tick">┤</span> <span class="idx">04</span>·PROCESSES /blog <span class="tick">├</span></span>
+    <span class="pmeta">15 total · 1 running</span>
+    <div class="ps-head"><span class="c-st">STAT</span><span class="c-pid">PID·DATE</span><span>CMD</span></div>
+    <ul class="plist" id="plist">
+      <li class="post-row run"><a href="post.html"><span class="st">R</span><span class="pid">2026-06-10</span><span class="cmd">./перешёл-на-claude-fable-5 --цены --effort --кейсы</span></a></li>
+      <li class="post-row"><a href="#"><span class="st">S</span><span class="pid">2026-04-30</span><span class="cmd">OTel для Claude Code — рентген твоих скиллов</span></a></li>
+      <li class="post-row"><a href="#"><span class="st">S</span><span class="pid">2026-04-27</span><span class="cmd">Свой Miro за 30 минут вместо подписки</span></a></li>
+      <li class="post-row"><a href="#"><span class="st">S</span><span class="pid">2026-04-22</span><span class="cmd">Как трекать задачи агентом в нескольких репо</span></a></li>
+      <li class="post-row"><a href="#"><span class="st">S</span><span class="pid">2026-04-22</span><span class="cmd">Как я научил Claude Code писать техно-музыку</span></a></li>
+      <li class="post-row"><a href="#"><span class="st">S</span><span class="pid">2026-04-08</span><span class="cmd">Как я включил Claude Code в режим без вопросов</span></a></li>
+      <li class="post-row"><a href="#"><span class="st">S</span><span class="pid">2026-03-29</span><span class="cmd">Написал скилл для аудита продукта в Claude Code</span></a></li>
+      <li class="post-row"><a href="#"><span class="st">S</span><span class="pid">2026-03-27</span><span class="cmd">Эту статью написал мой агент по тикету</span></a></li>
+      <li class="post-row"><a href="#"><span class="st">S</span><span class="pid">2026-03-19</span><span class="cmd">Software for One: софт, который нужен только тебе</span></a></li>
+      <li class="post-row"><a href="#"><span class="st">S</span><span class="pid">2026-03-16</span><span class="cmd">Слои контекста: организуем файлы по скорости изменения</span></a></li>
+      <li class="post-row"><a href="#"><span class="st">S</span><span class="pid">2026-03-14</span><span class="cmd">AGENTS.md: дружим Claude Code с Codex</span></a></li>
+      <li class="post-row"><a href="#"><span class="st">S</span><span class="pid">2026-03-12</span><span class="cmd">NotebookLM + Claude Code: бесплатный RAG за 5 минут</span></a></li>
+      <li class="post-row"><a href="#"><span class="st">S</span><span class="pid">2026-03-05</span><span class="cmd">Symphony: демон на Elixir раздаёт задачи Codex</span></a></li>
+      <li class="post-row"><a href="#"><span class="st">S</span><span class="pid">2026-03-05</span><span class="cmd">Haiku, Sonnet, Opus: какую модель ставить субагенту</span></a></li>
+      <li class="post-row"><a href="#"><span class="st">S</span><span class="pid">2026-03-04</span><span class="cmd">Как я собрал совет директоров из субагентов</span></a></li>
+    </ul>
+    <div class="ps-foot">R = running (свежий пост) · S = sleeping (архив) · сортировка: по дате ↓</div>
+  </section>
+
+  <!-- YOUTUBE -->
+  <section class="panel p-video" aria-label="YouTube">
+    <i class="crn tl">┌</i><i class="crn tr">┐</i><i class="crn bl">└</i><i class="crn br">┘</i>
+    <span class="ptitle"><span class="tick">┤</span> <span class="idx">05</span>·VIDEO FEED <span class="tick">├</span></span>
+    <span class="pmeta">yt://@serejaris</span>
+    <div class="vfeat">
+      <iframe src="https://www.youtube-nocookie.com/embed/eguZQ4MAh8U" title="Claude Fable 5: тесты, бенчмарки и разбор нового AI-релиза Anthropic" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+    </div>
+    <p class="vcap"><span class="live">▶ latest</span> · 2026-06-09 · <b>Claude Fable 5: тесты, бенчмарки и разбор нового AI-релиза Anthropic</b></p>
+    <ul class="vlist">
+      <li><a href="https://www.youtube.com/watch?v=05xs_kyacxI">
+        <img src="https://i.ytimg.com/vi/05xs_kyacxI/mqdefault.jpg" alt="" loading="lazy" width="80" height="45">
+        <span class="vmeta"><span class="t">GPT Image 2: разбор новой модели OpenAI</span><span class="d">2026-04-21</span></span></a></li>
+      <li><a href="https://www.youtube.com/watch?v=yX9-bOj1Mu0">
+        <img src="https://i.ytimg.com/vi/yX9-bOj1Mu0/mqdefault.jpg" alt="" loading="lazy" width="80" height="45">
+        <span class="vmeta"><span class="t">Claude Design: обзор нового AI для дизайна, прототипов и презентаций</span><span class="d">2026-04-17</span></span></a></li>
+      <li><a href="https://www.youtube.com/watch?v=tqDBIhMjo8w">
+        <img src="https://i.ytimg.com/vi/tqDBIhMjo8w/mqdefault.jpg" alt="" loading="lazy" width="80" height="45">
+        <span class="vmeta"><span class="t">Claude Opus 4.7, обзор, вайбкодинг тесты, сравнение с GPT 5.4</span><span class="d">2026-04-16</span></span></a></li>
+    </ul>
+  </section>
+
+</main>
+
+<footer class="eof">
+  <span class="tilde">~</span>
+  <span>sereja.tech © 2026 · собрано агентом по промпту, как и положено</span>
+  <span class="tilde">~ (END)</span>
+</footer>
+
+<div class="statusbar" role="contentinfo">
+  <span class="mode">NORMAL</span>
+  <span class="keys">
+    <span><kbd>j</kbd>/<kbd>k</kbd> навигация</span>
+    <span><kbd>enter</kbd> открыть</span>
+    <span class="k-extra"><kbd>g</kbd>/<kbd>G</kbd> верх/низ</span>
+    <span class="k-extra"><kbd>v</kbd> видео</span>
+    <span class="k-extra"><kbd>?</kbd> github</span>
+  </span>
+  <span class="path">/blog · 15 постов</span>
+  <span class="clock" id="clock">--:--:--</span>
+</div>
+
+<script>
+(function(){
+  // часы в статусбаре
+  var clock=document.getElementById('clock');
+  function tick(){
+    var d=new Date(),p=function(n){return String(n).padStart(2,'0')};
+    clock.textContent=p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds());
+  }
+  tick();setInterval(tick,1000);
+
+  // j/k навигация по постам
+  var rows=[].slice.call(document.querySelectorAll('#plist .post-row'));
+  var sel=-1;
+  function select(i){
+    if(sel>=0)rows[sel].classList.remove('sel');
+    sel=Math.max(0,Math.min(rows.length-1,i));
+    rows[sel].classList.add('sel');
+    rows[sel].scrollIntoView({block:'nearest'});
+  }
+  document.addEventListener('keydown',function(e){
+    if(e.metaKey||e.ctrlKey||e.altKey)return;
+    var t=e.target.tagName;
+    if(t==='INPUT'||t==='TEXTAREA')return;
+    switch(e.key){
+      case 'j': select(sel+1); e.preventDefault(); break;
+      case 'k': select(sel-1); e.preventDefault(); break;
+      case 'Enter':
+        if(sel>=0){location.href=rows[sel].querySelector('a').href; e.preventDefault();}
+        break;
+      case 'g': window.scrollTo({top:0,behavior:'smooth'}); break;
+      case 'G': window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'}); break;
+      case 'v': document.querySelector('.p-video').scrollIntoView({behavior:'smooth',block:'center'}); break;
+      case '?': window.open('https://github.com/serejaris','_blank'); break;
+    }
+  });
+})();
+</script>
+</body>
+</html>

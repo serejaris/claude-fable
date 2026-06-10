@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SEREJA.TECH 100 — Телетекст</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=PT+Mono&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#000010;
+  --white:#eaeaea;
+  --yellow:#ffd400;
+  --cyan:#00e8e8;
+  --green:#22e022;
+  --red:#ff3b30;
+  --blue:#2244ff;
+  --magenta:#ff44dd;
+  --dim:#5a6a7a;
+  --px:"Press Start 2P", monospace;
+  --mono:"PT Mono", monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{background:#000}
+body{
+  background:var(--bg);
+  color:var(--white);
+  font-family:var(--mono);
+  font-size:17px;
+  line-height:1.5;
+  min-height:100vh;
+  overflow-x:hidden;
+}
+/* ---- CRT ---- */
+.crt{
+  max-width:880px;
+  margin:0 auto;
+  padding:10px 18px 110px;
+  position:relative;
+}
+body::before{
+  content:"";
+  position:fixed;inset:0;
+  pointer-events:none;z-index:50;
+  background:repeating-linear-gradient(0deg,
+    rgba(0,0,0,.22) 0px, rgba(0,0,0,.22) 1px,
+    transparent 1px, transparent 3px);
+}
+body::after{
+  content:"";
+  position:fixed;inset:0;
+  pointer-events:none;z-index:51;
+  background:radial-gradient(ellipse at center,
+    transparent 55%, rgba(0,0,20,.55) 100%);
+}
+a{color:inherit;text-decoration:none}
+a:hover{background:var(--white);color:#000}
+a:hover .c-yellow, a:hover .c-cyan, a:hover .c-green, a:hover .c-red{color:#000}
+
+/* ---- colors ---- */
+.c-yellow{color:var(--yellow)}
+.c-cyan{color:var(--cyan)}
+.c-green{color:var(--green)}
+.c-red{color:var(--red)}
+.c-white{color:var(--white)}
+.c-dim{color:var(--dim)}
+.c-magenta{color:var(--magenta)}
+
+/* ---- header status line ---- */
+.statusline{
+  display:flex;justify-content:space-between;gap:12px;
+  font-family:var(--px);font-size:11px;
+  padding:8px 0 10px;
+  white-space:nowrap;overflow:hidden;
+  text-shadow:0 0 6px rgba(234,234,234,.35);
+}
+.statusline .pno{color:var(--white)}
+.statusline .stn{color:var(--green)}
+.statusline .dt{color:var(--yellow)}
+.statusline .clk{color:var(--cyan)}
+
+/* ---- mosaic banner ---- */
+.mosaic{
+  display:grid;
+  grid-template-columns:repeat(44,1fr);
+  grid-auto-rows:11px;
+  gap:0;
+  margin-bottom:4px;
+}
+.mosaic i{display:block}
+.m1{background:var(--red)} .m2{background:var(--yellow)}
+.m3{background:var(--green)} .m4{background:var(--cyan)}
+.m5{background:var(--blue)} .m6{background:var(--magenta)}
+.m0{background:transparent}
+
+/* ---- double height title ---- */
+.dh{
+  font-family:var(--px);
+  display:inline-block;
+  transform:scaleY(2);
+  transform-origin:top left;
+  letter-spacing:1px;
+}
+.banner{
+  padding:6px 0 0;
+  margin-bottom:8px;
+}
+.banner .dh{
+  font-size:22px;
+  color:var(--yellow);
+  text-shadow:0 0 14px rgba(255,212,0,.55), 2px 0 0 rgba(255,59,48,.4);
+  margin-bottom:54px;
+}
+.banner .sub{
+  font-family:var(--px);font-size:9px;color:var(--cyan);
+  margin-top:8px;letter-spacing:2px;
+}
+
+.rule{
+  border:0;border-top:2px solid var(--blue);
+  margin:14px 0;
+  box-shadow:0 0 8px rgba(34,68,255,.6);
+}
+
+/* ---- section header ---- */
+.sec-h{
+  display:flex;justify-content:space-between;align-items:baseline;
+  font-family:var(--px);font-size:11px;
+  background:var(--blue);
+  color:#fff;
+  padding:7px 8px 6px;
+  margin:26px 0 10px;
+  text-shadow:none;
+}
+.sec-h .pn{color:var(--yellow)}
+
+/* ---- identity ---- */
+.id-block{padding:2px 0 0}
+.id-block p{margin:4px 0}
+
+/* ---- index rows ---- */
+.row{
+  display:flex;gap:10px;align-items:baseline;
+  padding:2px 4px;
+}
+.row .dots{
+  flex:1 1 0;min-width:0;overflow:hidden;white-space:nowrap;
+  color:var(--dim);
+}
+.row .pn{font-family:var(--px);font-size:10px;color:var(--yellow);white-space:nowrap}
+a.row:hover .dots{color:#000}
+
+/* posts list */
+.post-row{
+  display:flex;gap:12px;align-items:baseline;
+  padding:2px 4px;
+}
+.post-row .d{color:var(--cyan);white-space:nowrap;font-size:15px}
+.post-row .t{color:var(--white)}
+a.post-row:hover .d, a.post-row:hover .t{color:#000}
+
+/* featured */
+.featured{
+  display:block;
+  border:2px solid var(--yellow);
+  box-shadow:0 0 14px rgba(255,212,0,.35), inset 0 0 18px rgba(255,212,0,.07);
+  padding:12px 14px;
+  margin:14px 0 6px;
+}
+.featured .tag{
+  font-family:var(--px);font-size:9px;
+  background:var(--red);color:#fff;
+  padding:4px 7px 3px;display:inline-block;
+  margin-bottom:10px;
+  animation:blink 1.2s steps(2,start) infinite;
+}
+@keyframes blink{50%{opacity:.15}}
+.featured .ft{
+  font-family:var(--px);font-size:13px;line-height:1.9;
+  color:var(--yellow);
+}
+.featured .fd{margin-top:8px;color:var(--cyan);font-size:15px}
+.featured .fp{margin-top:6px;color:var(--green)}
+.featured:hover{background:var(--yellow)}
+.featured:hover .ft,.featured:hover .fd,.featured:hover .fp{color:#000}
+.featured:hover .tag{background:#000;color:var(--yellow);animation:none}
+
+/* video rows */
+.vid-row{
+  display:flex;gap:12px;align-items:baseline;padding:2px 4px;
+}
+.vid-row .d{color:var(--cyan);white-space:nowrap;font-size:15px}
+.vid-row .t{color:var(--green)}
+a.vid-row:hover .d, a.vid-row:hover .t{color:#000}
+
+/* links */
+.lnk-row{display:flex;gap:12px;align-items:baseline;padding:2px 4px}
+.lnk-row .n{color:var(--white);white-space:nowrap}
+.lnk-row .u{color:var(--green);word-break:break-all;font-size:15px}
+.lnk-row .note{color:var(--dim);font-size:14px;white-space:nowrap}
+a.lnk-row:hover .n,a.lnk-row:hover .u,a.lnk-row:hover .note{color:#000}
+
+/* ---- fastext ---- */
+.fastext{
+  position:fixed;left:0;right:0;bottom:0;z-index:60;
+  display:grid;grid-template-columns:repeat(4,1fr);
+  max-width:880px;margin:0 auto;
+  font-family:var(--px);font-size:10px;
+  border-top:2px solid #000;
+}
+.fastext a{
+  display:block;text-align:center;
+  padding:13px 4px 11px;
+  color:#fff;text-decoration:none;text-shadow:1px 1px 0 #000;
+}
+.fastext a:hover{filter:brightness(1.35)}
+.fx-red{background:var(--red)}
+.fx-green{background:#0c9c0c}
+.fx-yellow{background:#c7a500}
+.fx-blue{background:var(--blue)}
+
+.footer-note{
+  margin-top:34px;color:var(--dim);font-size:14px;
+  font-family:var(--px);font-size:8px;line-height:2;
+}
+
+@media(max-width:600px){
+  body{font-size:15px}
+  .crt{padding:8px 10px 100px}
+  .statusline{font-size:8px;gap:6px}
+  .banner .dh{font-size:13px;margin-bottom:32px}
+  .banner .sub{font-size:7px}
+  .mosaic{grid-template-columns:repeat(22,1fr);grid-auto-rows:9px}
+  .mosaic i:nth-child(n+45){display:none}
+  .sec-h{font-size:9px}
+  .featured .ft{font-size:10px}
+  .fastext{font-size:8px}
+  .post-row,.vid-row{flex-direction:row}
+  .lnk-row .note{display:none}
+  .row .pn{font-size:8px}
+}
+</style>
+</head>
+<body>
+<div class="crt">
+
+  <!-- status line -->
+  <div class="statusline">
+    <span class="pno">P100</span>
+    <span class="stn">SEREJA.TECH&nbsp;100</span>
+    <span class="dt">Втр 10 Июн</span>
+    <span class="clk" id="clock">21:47/33</span>
+  </div>
+
+  <!-- mosaic banner -->
+  <div class="mosaic" id="mosaic" aria-hidden="true"></div>
+
+  <div class="banner">
+    <span class="dh">СЕРЕЖА&nbsp;РИС</span><br>
+    <div class="sub">ВАЙБКОДИНГ &middot; CLAUDE CODE &middot; AI-АГЕНТЫ</div>
+  </div>
+
+  <hr class="rule">
+
+  <!-- identity -->
+  <div class="id-block">
+    <p><span class="c-yellow">КТО:</span> архитектор агентных систем на Claude Code.</p>
+    <p><span class="c-yellow">ЧТО:</span> не пишу код руками — направляю агентов промптами.</p>
+    <p><span class="c-cyan">ГДЕ:</span> телеграм-канал <span class="c-green">рис. AI</span>, YouTube, сообщество вайбкодеров 2000+ человек.</p>
+  </div>
+
+  <!-- index of pages -->
+  <div class="sec-h"><span>ИНДЕКС СТРАНИЦ</span><span class="pn">P100</span></div>
+  <a class="row" href="#p101"><span class="c-white">Блог &mdash; статьи про вайбкодинг</span><span class="dots">..............................</span><span class="pn">101</span></a>
+  <a class="row" href="#p102"><span class="c-white">Видео &mdash; разборы и стримы</span><span class="dots">..............................</span><span class="pn">102</span></a>
+  <a class="row" href="#p103"><span class="c-white">Ссылки &mdash; каналы и проекты</span><span class="dots">..............................</span><span class="pn">103</span></a>
+  <a class="row" href="post.html"><span class="c-white">Статья дня &mdash; Claude Fable 5</span><span class="dots">..............................</span><span class="pn">104</span></a>
+
+  <!-- featured -->
+  <a class="featured" href="post.html">
+    <span class="tag">НОВОЕ &middot; 10.06.2026</span><br>
+    <span class="ft">ПЕРЕШЁЛ НА CLAUDE FABLE&nbsp;5: ЦЕНЫ, EFFORT, КЕЙСЫ</span>
+    <div class="fd">Новый класс Mythos, четвёртый в иерархии. Цены, лимиты, effort-режимы и кейсы со стрима в день релиза: шутер за полчаса, арканоид рукой, клон Majesty.</div>
+    <div class="fp">&raquo; ОТКРЫТЬ СТРАНИЦУ 104</div>
+  </a>
+
+  <!-- P101 blog -->
+  <div class="sec-h" id="p101"><span>БЛОГ &middot; СТАТЬИ</span><span class="pn">P101</span></div>
+  <a class="post-row" href="post.html"><span class="d">10.06</span><span class="t c-yellow">Перешёл на Claude Fable 5: цены, effort, кейсы</span></a>
+  <a class="post-row" href="#"><span class="d">30.04</span><span class="t">OTel для Claude Code &mdash; рентген твоих скиллов</span></a>
+  <a class="post-row" href="#"><span class="d">27.04</span><span class="t">Свой Miro за 30 минут вместо подписки</span></a>
+  <a class="post-row" href="#"><span class="d">22.04</span><span class="t">Как трекать задачи агентом в нескольких репо</span></a>
+  <a class="post-row" href="#"><span class="d">22.04</span><span class="t">Как я научил Claude Code писать техно-музыку</span></a>
+  <a class="post-row" href="#"><span class="d">08.04</span><span class="t">Как я включил Claude Code в режим без вопросов</span></a>
+  <a class="post-row" href="#"><span class="d">29.03</span><span class="t">Написал скилл для аудита продукта в Claude Code</span></a>
+  <a class="post-row" href="#"><span class="d">27.03</span><span class="t">Эту статью написал мой агент по тикету</span></a>
+  <a class="post-row" href="#"><span class="d">19.03</span><span class="t">Software for One: софт, который нужен только тебе</span></a>
+  <a class="post-row" href="#"><span class="d">16.03</span><span class="t">Слои контекста: организуем файлы по скорости изменения</span></a>
+  <a class="post-row" href="#"><span class="d">14.03</span><span class="t">AGENTS.md: дружим Claude Code с Codex</span></a>
+  <a class="post-row" href="#"><span class="d">12.03</span><span class="t">NotebookLM + Claude Code: бесплатный RAG за 5 минут</span></a>
+  <a class="post-row" href="#"><span class="d">05.03</span><span class="t">Symphony: демон на Elixir раздаёт задачи Codex</span></a>
+  <a class="post-row" href="#"><span class="d">05.03</span><span class="t">Haiku, Sonnet, Opus: какую модель ставить субагенту</span></a>
+  <a class="post-row" href="#"><span class="d">04.03</span><span class="t">Как я собрал совет директоров из субагентов</span></a>
+
+  <!-- P102 video -->
+  <div class="sec-h" id="p102"><span>ВИДЕО &middot; YOUTUBE</span><span class="pn">P102</span></div>
+  <a class="vid-row" href="https://www.youtube.com/watch?v=eguZQ4MAh8U"><span class="d">09.06</span><span class="t c-yellow">&#9654; Claude Fable 5: тесты, бенчмарки и разбор нового AI-релиза Anthropic</span></a>
+  <a class="vid-row" href="https://www.youtube.com/watch?v=05xs_kyacxI"><span class="d">21.04</span><span class="t">&#9654; GPT Image 2: разбор новой модели OpenAI</span></a>
+  <a class="vid-row" href="https://www.youtube.com/watch?v=yX9-bOj1Mu0"><span class="d">17.04</span><span class="t">&#9654; Claude Design: обзор нового AI для дизайна, прототипов и презентаций</span></a>
+  <a class="vid-row" href="https://www.youtube.com/watch?v=tqDBIhMjo8w"><span class="d">16.04</span><span class="t">&#9654; Claude Opus 4.7, обзор, вайбкодинг тесты, сравнение с GPT 5.4</span></a>
+
+  <!-- P103 links -->
+  <div class="sec-h" id="p103"><span>ССЫЛКИ</span><span class="pn">P103</span></div>
+  <a class="lnk-row" href="https://t.me/ris_ai"><span class="n c-yellow">рис. AI</span><span class="u">t.me/ris_ai</span><span class="note">тг-канал</span></a>
+  <a class="lnk-row" href="https://t.me/vibecod3rs"><span class="n c-yellow">Сообщество Вайбкодеров</span><span class="u">t.me/vibecod3rs</span><span class="note">2000+ человек</span></a>
+  <a class="lnk-row" href="https://www.youtube.com/@serejaris"><span class="n c-yellow">YouTube</span><span class="u">youtube.com/@serejaris</span></a>
+  <a class="lnk-row" href="https://vibecoding.phd"><span class="n c-yellow">Кружок Вайбкодинга</span><span class="u">vibecoding.phd</span></a>
+  <a class="lnk-row" href="https://hsl.sh"><span class="n c-yellow">HSL &mdash; AI-студия</span><span class="u">hsl.sh</span></a>
+  <a class="lnk-row" href="https://x.com/riiiiiiiiss"><span class="n c-yellow">Twitter</span><span class="u">x.com/riiiiiiiiss</span></a>
+  <a class="lnk-row" href="https://github.com/serejaris"><span class="n c-yellow">GitHub</span><span class="u">github.com/serejaris</span></a>
+
+  <div class="footer-note">
+    SEREJA.TECH ТЕЛЕТЕКСТ &middot; ПЕРЕДАЧА ИДЁТ КРУГЛОСУТОЧНО<br>
+    СТРАНИЦЫ 100&ndash;104 &middot; ЦВЕТНЫЕ КНОПКИ ВНИЗУ = БЫСТРЫЙ ПЕРЕХОД
+  </div>
+</div>
+
+<!-- fastext -->
+<nav class="fastext">
+  <a class="fx-red" href="#p101">БЛОГ</a>
+  <a class="fx-green" href="#p102">ВИДЕО</a>
+  <a class="fx-yellow" href="#p103">ССЫЛКИ</a>
+  <a class="fx-blue" href="post.html">СТАТЬЯ 104</a>
+</nav>
+
+<script>
+// live clock: HH:MM/SS like teletext rolling counter
+(function(){
+  var el=document.getElementById('clock');
+  function pad(n){return (n<10?'0':'')+n}
+  function tick(){
+    var d=new Date();
+    el.textContent=pad(d.getHours())+':'+pad(d.getMinutes())+'/'+pad(d.getSeconds());
+  }
+  tick();setInterval(tick,1000);
+})();
+
+// mosaic banner: deterministic pseudo-random colored blocks
+(function(){
+  var host=document.getElementById('mosaic');
+  var cols=44, rows=3, seed=104;
+  function rnd(){seed=(seed*1103515245+12345)&0x7fffffff;return seed/0x7fffffff}
+  var palette=['m1','m2','m3','m4','m5','m6','m0','m0'];
+  var html='';
+  for(var r=0;r<rows;r++){
+    for(var c=0;c<cols;c++){
+      var k=palette[Math.floor(rnd()*palette.length)];
+      // denser color at edges, like Ceefax weather strip
+      if(r===1 && c%7<3) k='m'+(1+Math.floor(rnd()*6));
+      html+='<i class="'+k+'"></i>';
+    }
+  }
+  host.innerHTML=html;
+})();
+</script>
+</body>
+</html>

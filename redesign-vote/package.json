@@ -1,0 +1,13 @@
+{
+  "name": "redesign-vote",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "10 redesign concepts for sereja.tech with community like/dislike voting",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": "24.x"
+  }
+}
