@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ЛУНА-26 · симуляция поверхности</title>
+<meta name="description" content="интерактивная симуляция полёта над лунной поверхностью. процедурный рельеф, кратеры, навигация с клавиатуры.">
+<style>
+  @font-face { font-family: 'mono'; src: local('Courier New'); }
+  :root {
+    --hud: #c8f5d8;
+    --hud-dim: rgba(200,245,216,0.45);
+    --hud-faint: rgba(200,245,216,0.18);
+    --bg: #000;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { height:100%; overflow:hidden; background:var(--bg); }
+  body { font-family: 'Courier New', monospace; color: var(--hud); }
+  #scene { position:fixed; inset:0; width:100%; height:100%; image-rendering:pixelated; }
+
+  .hud { position:fixed; pointer-events:none; z-index:10; text-shadow:0 0 6px rgba(200,245,216,0.5); }
+  .hud-tl { top:18px; left:20px; font-size:12px; line-height:1.7; letter-spacing:0.08em; }
+  .hud-tr { top:18px; right:20px; font-size:12px; text-align:right; line-height:1.7; letter-spacing:0.08em; }
+  .hud-bl { bottom:18px; left:20px; font-size:11px; line-height:1.8; color:var(--hud-dim); letter-spacing:0.06em; }
+  .hud-bc { bottom:18px; left:50%; transform:translateX(-50%); font-size:11px; color:var(--hud-dim); letter-spacing:0.12em; }
+
+  .hud .label { color:var(--hud-dim); }
+  .hud .val { color:var(--hud); }
+  .blink { animation: blink 1.6s steps(2) infinite; }
+  @keyframes blink { 50% { opacity:0.25; } }
+
+  .crosshair { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:9; pointer-events:none; }
+  .crosshair::before, .crosshair::after { content:''; position:absolute; background:var(--hud-faint); }
+  .crosshair::before { width:30px; height:1px; left:-15px; top:0; }
+  .crosshair::after { width:1px; height:30px; top:-15px; left:0; }
+
+  .frame { position:fixed; inset:10px; border:1px solid var(--hud-faint); z-index:8; pointer-events:none; }
+  .frame::before, .frame::after {
+    content:''; position:absolute; width:14px; height:14px; border:1px solid var(--hud-dim);
+  }
+  .frame::before { top:-1px; left:-1px; border-right:none; border-bottom:none; }
+  .frame::after { bottom:-1px; right:-1px; border-left:none; border-top:none; }
+
+  .scanlines { position:fixed; inset:0; z-index:20; pointer-events:none; opacity:0.35;
+    background: repeating-linear-gradient(0deg, transparent 0 2px, rgba(0,0,0,0.25) 2px 4px); }
+
+  #intro { position:fixed; inset:0; z-index:30; background:rgba(0,0,0,0.82); display:flex; align-items:center; justify-content:center; transition:opacity 0.8s; }
+  #intro.hide { opacity:0; pointer-events:none; }
+  .intro-box { border:1px solid var(--hud-dim); padding:36px 48px; text-align:center; max-width:440px; }
+  .intro-box h1 { font-size:20px; letter-spacing:0.35em; margin-bottom:6px; font-weight:normal; }
+  .intro-box .sub { font-size:11px; color:var(--hud-dim); letter-spacing:0.15em; margin-bottom:26px; }
+  .keys { font-size:12px; line-height:2.1; text-align:left; display:inline-block; }
+  .keys b { display:inline-block; min-width:120px; font-weight:normal; color:var(--hud); }
+  .keys span { color:var(--hud-dim); }
+  .intro-box .start { margin-top:26px; font-size:12px; letter-spacing:0.2em; }
+
+  .minimap { position:fixed; bottom:18px; right:20px; z-index:10; pointer-events:none; }
+  .minimap canvas { display:block; border:1px solid var(--hud-faint); }
+  .minimap .mlabel { font-size:10px; color:var(--hud-dim); letter-spacing:0.1em; text-align:right; margin-top:4px; }
+</style>
+</head>
+<body>
+
+<canvas id="scene"></canvas>
+<div class="frame"></div>
+<div class="crosshair"></div>
+<div class="scanlines"></div>
+
+<div class="hud hud-tl">
+  <div><span class="label">МИССИЯ </span><span class="val">ЛУНА-26</span></div>
+  <div><span class="label">СЕКТОР </span><span class="val">MARE TRANQUILLITATIS</span></div>
+  <div><span class="label">СВЯЗЬ  </span><span class="val blink">●&nbsp;АКТИВНА</span></div>
+</div>
+
+<div class="hud hud-tr">
+  <div><span class="label">X </span><span class="val" id="hx">0</span></div>
+  <div><span class="label">Y </span><span class="val" id="hy">0</span></div>
+  <div><span class="label">ВЫСОТА </span><span class="val" id="halt">0</span><span class="label"> м</span></div>
+  <div><span class="label">КУРС </span><span class="val" id="hhdg">0°</span></div>
+  <div><span class="label">СКОРОСТЬ </span><span class="val" id="hspd">0.0</span></div>
+</div>
+
+<div class="hud hud-bl">
+  <div>W/S · ↑/↓ &nbsp;— вперёд / назад</div>
+  <div>A/D · ←/→ — поворот</div>
+  <div>Q / E &nbsp;&nbsp;&nbsp;&nbsp;— высота</div>
+  <div>SHIFT &nbsp;&nbsp;&nbsp;— форсаж</div>
+</div>
+
+<div class="hud hud-bc">ТЕЛЕМЕТРИЯ В НОРМЕ · ГРАВИТАЦИЯ 1.62 м/с²</div>
+
+<div class="minimap">
+  <canvas id="mmap" width="120" height="120"></canvas>
+  <div class="mlabel">РАДАР</div>
+</div>
+
+<div id="intro">
+  <div class="intro-box">
+    <h1>ЛУНА-26</h1>
+    <div class="sub">симуляция лунной поверхности · v1.0</div>
+    <div class="keys">
+      <div><b>W / S, ↑ / ↓</b><span>движение</span></div>
+      <div><b>A / D, ← / →</b><span>поворот</span></div>
+      <div><b>Q / E</b><span>высота</span></div>
+      <div><b>SHIFT</b><span>форсаж ×3</span></div>
+    </div>
+    <div class="start blink">[ НАЖМИТЕ ЛЮБУЮ КЛАВИШУ ]</div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ── процедурная карта высот ──────────────────────────────
+const MAP = 1024;            // размер карты (степень двойки)
+const height = new Float32Array(MAP * MAP);
+const shade  = new Float32Array(MAP * MAP);
+
+// детерминированный рандом
+let seed = 1337;
+function rnd() { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; }
+
+// value noise
+const PERM = new Uint16Array(512);
+const GRAD = new Float32Array(256);
+for (let i = 0; i < 256; i++) { PERM[i] = i; GRAD[i] = rnd(); }
+for (let i = 255; i > 0; i--) { const j = (rnd() * (i + 1)) | 0; const t = PERM[i]; PERM[i] = PERM[j]; PERM[j] = t; }
+for (let i = 0; i < 256; i++) PERM[256 + i] = PERM[i];
+
+function smooth(t){ return t*t*(3-2*t); }
+function vnoise(x, y) {
+  const xi = Math.floor(x) & 255, yi = Math.floor(y) & 255;
+  const xf = x - Math.floor(x), yf = y - Math.floor(y);
+  const u = smooth(xf), v = smooth(yf);
+  const a = GRAD[PERM[PERM[xi] + yi] & 255];
+  const b = GRAD[PERM[PERM[xi+1] + yi] & 255];
+  const c = GRAD[PERM[PERM[xi] + yi+1] & 255];
+  const d = GRAD[PERM[PERM[xi+1] + yi+1] & 255];
+  return a + (b-a)*u + (c-a)*v + (a-b-c+d)*u*v;
+}
+function fbm(x, y) {
+  let s = 0, amp = 1, freq = 1, norm = 0;
+  for (let o = 0; o < 5; o++) { s += vnoise(x*freq, y*freq)*amp; norm += amp; amp *= 0.5; freq *= 2.1; }
+  return s / norm;
+}
+
+// базовый рельеф
+for (let y = 0; y < MAP; y++)
+  for (let x = 0; x < MAP; x++)
+    height[y*MAP + x] = fbm(x*0.012, y*0.012) * 90 + fbm(x*0.05, y*0.05) * 18;
+
+// кратеры: впадина + вал по краю
+function crater(cx, cy, r, depth) {
+  const rim = r * 1.25;
+  const r2 = rim * rim;
+  const x0 = Math.floor(cx - rim), x1 = Math.ceil(cx + rim);
+  const y0 = Math.floor(cy - rim), y1 = Math.ceil(cy + rim);
+  for (let y = y0; y <= y1; y++) {
+    for (let x = x0; x <= x1; x++) {
+      const dx = x - cx, dy = y - cy;
+      const d2 = dx*dx + dy*dy;
+      if (d2 > r2) continue;
+      const d = Math.sqrt(d2) / r; // 0..1.25
+      const i = ((y & (MAP-1)) * MAP + (x & (MAP-1)));
+      if (d < 1) {
+        // чаша
+        const bowl = Math.cos(d * Math.PI * 0.5);
+        height[i] -= depth * bowl * bowl;
+      } else {
+        // вал
+        const t = (d - 1) / 0.25;
+        height[i] += depth * 0.35 * Math.sin((1 - t) * Math.PI * 0.5);
+      }
+    }
+  }
+}
+for (let i = 0; i < 90; i++) crater(rnd()*MAP, rnd()*MAP, 6 + rnd()*rnd()*70, 8 + rnd()*30);
+
+// предрасчёт освещения (солнце низко, с северо-запада)
+for (let y = 0; y < MAP; y++) {
+  for (let x = 0; x < MAP; x++) {
+    const i = y*MAP + x;
+    const hx = height[((y)&(MAP-1))*MAP + ((x+1)&(MAP-1))] - height[i];
+    const hy = height[((y+1)&(MAP-1))*MAP + x] - height[i];
+    let l = 0.55 - hx*0.06 - hy*0.04;
+    l += (vnoise(x*0.3, y*0.3) - 0.5) * 0.08; // реголитовая фактура
+    shade[i] = Math.max(0.03, Math.min(1, l));
+  }
+}
+
+function getH(x, y) { return height[((y|0)&(MAP-1))*MAP + ((x|0)&(MAP-1))]; }
+function getS(x, y) { return shade[((y|0)&(MAP-1))*MAP + ((x|0)&(MAP-1))]; }
+// билинейная выборка — убирает «частокол» на валах кратеров
+function bilerp(arr, x, y) {
+  const fx = Math.floor(x), fy = Math.floor(y);
+  const tx = x - fx, ty = y - fy;
+  const x0 = fx & (MAP-1), x1 = (fx+1) & (MAP-1);
+  const r0 = (fy & (MAP-1)) * MAP, r1 = ((fy+1) & (MAP-1)) * MAP;
+  const a = arr[r0+x0], b = arr[r0+x1], c = arr[r1+x0], d = arr[r1+x1];
+  return a + (b-a)*tx + (c-a)*ty + (a-b-c+d)*tx*ty;
+}
+
+// ── звёзды ───────────────────────────────────────────────
+const STARS = [];
+for (let i = 0; i < 260; i++) STARS.push({ a: rnd()*Math.PI*2, e: rnd(), b: 0.3 + rnd()*0.7 });
+
+// ── камера ───────────────────────────────────────────────
+const cam = { x: 512, y: 512, ang: 0.5, alt: 90, spd: 0 };
+
+// ── рендер (voxel space) ─────────────────────────────────
+const canvas = document.getElementById('scene');
+const ctx = canvas.getContext('2d');
+let W = 0, H = 0, RW = 0, RH = 0, img = null, buf = null;
+const SCALE = 2.5; // внутреннее разрешение ниже — ретро-зерно + скорость
+
+function resize() {
+  W = innerWidth; H = innerHeight;
+  canvas.width = W; canvas.height = H;
+  RW = Math.floor(W / SCALE); RH = Math.floor(H / SCALE);
+  img = ctx.createImageData(RW, RH);
+  buf = new Uint32Array(img.data.buffer);
+}
+addEventListener('resize', resize);
+resize();
+
+const off = document.createElement('canvas');
+const offctx = off.getContext('2d');
+
+function render() {
+  // небо: чёрное + звёзды
+  buf.fill(0xFF000000);
+  const horizon = RH * 0.42 + (cam.alt - 90) * 0.15;
+  for (const s of STARS) {
+    let rel = s.a - cam.ang;
+    rel = ((rel + Math.PI) % (Math.PI*2) + Math.PI*2) % (Math.PI*2) - Math.PI;
+    if (Math.abs(rel) > 1.2) continue;
+    const sx = ((rel / 1.2) * 0.5 + 0.5) * RW | 0;
+    const sy = (s.e * horizon * 0.95) | 0;
+    if (sx < 0 || sx >= RW || sy < 0 || sy >= RH) continue;
+    const v = (s.b * 255) | 0;
+    buf[sy*RW + sx] = 0xFF000000 | (v<<16) | (v<<8) | v;
+  }
+  // земля над горизонтом — маленький голубой диск
+  {
+    let rel = (2.3 - cam.ang);
+    rel = ((rel + Math.PI) % (Math.PI*2) + Math.PI*2) % (Math.PI*2) - Math.PI;
+    if (Math.abs(rel) < 1.2) {
+      const ex = ((rel / 1.2) * 0.5 + 0.5) * RW | 0;
+      const ey = horizon * 0.3 | 0;
+      for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) {
+        if (dx*dx + dy*dy > 10) continue;
+        const px = ex+dx, py = ey+dy;
+        if (px<0||px>=RW||py<0||py>=RH) continue;
+        const edge = dx*dx+dy*dy > 6;
+        buf[py*RW + px] = edge ? 0xFFB07040 : 0xFFD09050;
+      }
+    }
+  }
+
+  // voxel space: колоннами
+  const sinA = Math.sin(cam.ang), cosA = Math.cos(cam.ang);
+  const DIST = 600;
+  const ybuf = new Int32Array(RW).fill(RH);
+  let dz = 1, z = 1;
+  while (z < DIST) {
+    const plx = -cosA*z - sinA*z, ply =  sinA*z - cosA*z;
+    const prx =  cosA*z - sinA*z, pry = -sinA*z - cosA*z;
+    const dx = (prx - plx) / RW, dy = (pry - ply) / RW;
+    let px = plx + cam.x, py = ply + cam.y;
+    const invz = 1 / z * 240;
+    const fog = z / DIST;
+    for (let i = 0; i < RW; i++) {
+      const h = bilerp(height, px, py);
+      let sy = ((cam.alt - h) * invz + horizon) | 0;
+      if (sy < 0) sy = 0;
+      if (sy < ybuf[i]) {
+        let l = bilerp(shade, px, py);
+        // дальние — темнее (нет атмосферы, но глубина читается)
+        l *= 1 - fog * 0.75;
+        const v = (l * 235) | 0;
+        // лёгкий холодный сдвиг в тенях
+        const r = v, g = v, b = Math.min(255, v + 4);
+        const col = 0xFF000000 | (b<<16) | (g<<8) | r;
+        for (let yy = sy; yy < ybuf[i]; yy++) buf[yy*RW + i] = col;
+        ybuf[i] = sy;
+      }
+      px += dx; py += dy;
+    }
+    z += dz;
+    dz *= 1.007; // шаг растёт с дистанцией
+  }
+
+  off.width = RW; off.height = RH;
+  offctx.putImageData(img, 0, 0);
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(off, 0, 0, W, H);
+}
+
+// ── миникарта ────────────────────────────────────────────
+const mmap = document.getElementById('mmap');
+const mctx = mmap.getContext('2d');
+const mimg = mctx.createImageData(120, 120);
+function renderMap() {
+  const d = mimg.data;
+  const R = 140; // радиус обзора в координатах карты
+  for (let my = 0; my < 120; my++) {
+    for (let mx = 0; mx < 120; mx++) {
+      const wx = cam.x + (mx - 60) / 60 * R;
+      const wy = cam.y + (my - 60) / 60 * R;
+      const v = (getS(wx, wy) * 110) | 0;
+      const i = (my*120 + mx) * 4;
+      d[i] = v*0.8; d[i+1] = v; d[i+2] = v*0.88; d[i+3] = 255;
+    }
+  }
+  mctx.putImageData(mimg, 0, 0);
+  // конус направления
+  mctx.strokeStyle = 'rgba(200,245,216,0.9)';
+  mctx.fillStyle = 'rgba(200,245,216,0.15)';
+  mctx.beginPath();
+  mctx.moveTo(60, 60);
+  mctx.arc(60, 60, 26, cam.ang - Math.PI/2 - 0.4, cam.ang - Math.PI/2 + 0.4);
+  mctx.closePath(); mctx.fill();
+  mctx.beginPath(); mctx.arc(60, 60, 2.5, 0, Math.PI*2); mctx.stroke();
+}
+
+// ── управление ───────────────────────────────────────────
+const keys = {};
+let started = false;
+addEventListener('keydown', e => {
+  if (!started) { started = true; document.getElementById('intro').classList.add('hide'); }
+  keys[e.code] = true;
+  if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) e.preventDefault();
+});
+addEventListener('keyup', e => keys[e.code] = false);
+addEventListener('pointerdown', () => {
+  if (!started) { started = true; document.getElementById('intro').classList.add('hide'); }
+});
+
+// ── главный цикл ─────────────────────────────────────────
+const hx = document.getElementById('hx'), hy = document.getElementById('hy'),
+      halt = document.getElementById('halt'), hhdg = document.getElementById('hhdg'),
+      hspd = document.getElementById('hspd');
+
+let last = performance.now(), frame = 0;
+function loop(now) {
+  const dt = Math.min((now - last) / 1000, 0.05);
+  last = now;
+
+  const boost = (keys['ShiftLeft'] || keys['ShiftRight']) ? 3 : 1;
+  const fwd = (keys['KeyW'] || keys['ArrowUp'] ? 1 : 0) - (keys['KeyS'] || keys['ArrowDown'] ? 1 : 0);
+  const turn = (keys['KeyD'] || keys['ArrowRight'] ? 1 : 0) - (keys['KeyA'] || keys['ArrowLeft'] ? 1 : 0);
+  const lift = (keys['KeyQ'] ? 1 : 0) - (keys['KeyE'] ? 1 : 0);
+
+  // инерция — луноход не тормозит мгновенно
+  const target = fwd * 70 * boost;
+  cam.spd += (target - cam.spd) * Math.min(1, dt * 2.2);
+  cam.ang += turn * dt * 1.4;
+  cam.alt += lift * dt * 45 * boost;
+
+  cam.x += Math.sin(cam.ang) * cam.spd * dt;
+  cam.y -= Math.cos(cam.ang) * cam.spd * dt;
+
+  // не ниже поверхности
+  const ground = getH(cam.x, cam.y);
+  if (cam.alt < ground + 8) cam.alt = ground + 8;
+  if (cam.alt > 400) cam.alt = 400;
+
+  render();
+  if (frame % 4 === 0) renderMap();
+
+  hx.textContent = (cam.x | 0).toString().padStart(4, '0');
+  hy.textContent = (cam.y | 0).toString().padStart(4, '0');
+  halt.textContent = ((cam.alt - ground) | 0);
+  let deg = ((cam.ang * 180 / Math.PI) % 360 + 360) % 360 | 0;
+  hhdg.textContent = deg + '°';
+  hspd.textContent = Math.abs(cam.spd).toFixed(1);
+
+  frame++;
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
