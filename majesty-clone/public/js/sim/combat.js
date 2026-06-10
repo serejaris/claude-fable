@@ -126,7 +126,7 @@ export function reviveHero(state, grave) {
     level: grave.level, xp: 0, hp: Math.round(cls.hp(grave.level) * 0.5), maxHp: cls.hp(grave.level),
     x: guild.x, y: guild.y + 24, prevX: guild.x, prevY: guild.y,
     gold: 0, potions: 0, weaponTier: 0, armorTier: 0,
-    traits: grave.traits, home: homeId, intent: 'back from the dead',
+    traits: grave.traits, home: homeId, intent: 'вернулся с того света',
     action: null, thinkAt: state.tick + 5, atkAt: 0, ignore: {}, kills: 0,
   };
   state.heroes.push(h);

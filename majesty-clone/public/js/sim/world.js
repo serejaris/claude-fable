@@ -155,7 +155,7 @@ export function hireHero(state, guild) {
     x: guild.x + randRange(state, -10, 10), y: guild.y + TILE,
     prevX: guild.x, prevY: guild.y,
     gold: ECON.heroStartGold, potions: 0, weaponTier: 0, armorTier: 0,
-    traits, home: guild.id, intent: 'reporting for duty',
+    traits, home: guild.id, intent: 'прибыл на службу',
     action: null, thinkAt: state.tick + randInt(state, 0, 10),
     atkAt: 0, ignore: {}, kills: 0,
   };

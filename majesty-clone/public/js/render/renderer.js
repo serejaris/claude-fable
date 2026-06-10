@@ -303,7 +303,7 @@ export function createRenderer(terrainC, entityC, effectC) {
       c.fillStyle = '#1d1408';
       c.font = 'bold 10px Alegreya, serif';
       c.textAlign = 'center';
-      c.fillText(`${f.bounty}g`, x + 1, y - 29);
+      c.fillText(`${f.bounty} з.`, x + 1, y - 29);
       if (f.responders) {
         c.fillStyle = '#3d2f1c';
         c.font = '9px Alegreya, serif';
@@ -351,7 +351,7 @@ export function createRenderer(terrainC, entityC, effectC) {
       hpBar(c, x - 12, y - r - 9, 24, m.hp / m.maxHp, '#a33');
       c.fillStyle = 'rgba(29,20,8,0.85)';
       c.font = '8px Alegreya, serif'; c.textAlign = 'center';
-      c.fillText(`L${m.level}`, x, y - r - 12);
+      c.fillText(`ур.${m.level}`, x, y - r - 12);
     }
   }
 

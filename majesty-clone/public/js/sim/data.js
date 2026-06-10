@@ -15,7 +15,7 @@ export const XP = {
 
 export const CLASSES = {
   warrior: {
-    label: 'Warrior', cost: 250, color: '#c84b4b',
+    label: 'Воин', cost: 250, color: '#c84b4b',
     hp: L => 50 + 16 * L, dmg: L => 6 + 2.5 * L,
     range: 28, speed: 55, atkCd: 1.0, sight: 6,
     traits: { courage: 0.7, greed: 0.5, diligence: 0.5 },
@@ -23,21 +23,21 @@ export const CLASSES = {
     affinity: { fight: 1.2, lair: 1.1, explore: 0.7, gold: 0.8 },
   },
   ranger: {
-    label: 'Ranger', cost: 300, color: '#4ba35a',
+    label: 'Следопыт', cost: 300, color: '#4ba35a',
     hp: L => 35 + 10 * L, dmg: L => 5 + 2.2 * L,
     range: 130, speed: 72, atkCd: 1.0, sight: 8,
     traits: { courage: 0.5, greed: 0.4, diligence: 0.8 },
     affinity: { fight: 0.9, lair: 0.9, explore: 1.4, gold: 0.7 },
   },
   wizard: {
-    label: 'Wizard', cost: 400, color: '#5a6fd6',
+    label: 'Маг', cost: 400, color: '#5a6fd6',
     hp: L => 34 + 9 * L, dmg: L => 14 + 6 * L, // burst per hit, slow cadence
     range: 115, speed: 60, atkCd: 2.0, sight: 7, // faster than goblin: fleeing must be survivable
     traits: { courage: 0.3, greed: 0.6, diligence: 0.5 },
     affinity: { fight: 0.9, lair: 1.0, explore: 0.6, gold: 0.9 },
   },
   rogue: {
-    label: 'Rogue', cost: 200, color: '#9b59b6',
+    label: 'Плут', cost: 200, color: '#9b59b6',
     hp: L => 30 + 9 * L, dmg: L => 5 + 2.4 * L, // dagger dps: equal-level threat ratio dips below the decline gate
     range: 26, speed: 68, atkCd: 0.7, sight: 7,
     traits: { courage: 0.3, greed: 0.9, diligence: 0.7 },
@@ -46,12 +46,12 @@ export const CLASSES = {
 };
 
 export const MONSTERS = {
-  rat:      { label: 'Giant Rat', level: 1, speed: 60, color: '#8d7250' },
-  goblin:   { label: 'Goblin',    level: 2, speed: 58, color: '#6f8f3e' },
-  spider:   { label: 'Spider',    level: 3, speed: 66, color: '#4a4458' },
-  wolf:     { label: 'Dire Wolf', level: 4, speed: 70, color: '#7a7d85' },
-  troll:    { label: 'Troll',     level: 6, speed: 45, color: '#4e7a5c', regen: 2 },
-  minotaur: { label: 'Minotaur',  level: 8, speed: 52, color: '#a8623c' },
+  rat:      { label: 'Крыса', level: 1, speed: 60, color: '#8d7250' },
+  goblin:   { label: 'Гоблин',    level: 2, speed: 58, color: '#6f8f3e' },
+  spider:   { label: 'Паук',    level: 3, speed: 66, color: '#4a4458' },
+  wolf:     { label: 'Волк', level: 4, speed: 70, color: '#7a7d85' },
+  troll:    { label: 'Тролль',     level: 6, speed: 45, color: '#4e7a5c', regen: 2 },
+  minotaur: { label: 'Минотавр',  level: 8, speed: 52, color: '#a8623c' },
 };
 export const monsterHp = L => 30 + 13 * L;
 export const monsterDmg = L => 4 + 2.2 * L;
@@ -60,12 +60,12 @@ export const MONSTER_ATK_CD = 1.0;
 export const MONSTER_SIGHT = 5; // tiles
 
 export const LAIR_TYPES = [
-  { mon: 'rat',      hp: 250, cap: 3, label: 'Rat Den' },
-  { mon: 'goblin',   hp: 300, cap: 3, label: 'Goblin Camp' },
-  { mon: 'spider',   hp: 320, cap: 3, label: 'Spider Nest' },
-  { mon: 'wolf',     hp: 350, cap: 2, label: 'Wolf Den' },
-  { mon: 'troll',    hp: 450, cap: 2, label: 'Troll Cave' },
-  { mon: 'minotaur', hp: 600, cap: 2, label: 'Minotaur Lair' },
+  { mon: 'rat',      hp: 250, cap: 3, label: 'Крысиная нора' },
+  { mon: 'goblin',   hp: 300, cap: 3, label: 'Лагерь гоблинов' },
+  { mon: 'spider',   hp: 320, cap: 3, label: 'Паучье гнездо' },
+  { mon: 'wolf',     hp: 350, cap: 2, label: 'Волчье логово' },
+  { mon: 'troll',    hp: 450, cap: 2, label: 'Пещера тролля' },
+  { mon: 'minotaur', hp: 600, cap: 2, label: 'Логово минотавра' },
 ];
 export const LAIR_TREASURE = 150; // gold dropped + per level bonus
 export const LAIR_GUARD_RESPAWN = 25; // s between local guard spawns
@@ -73,14 +73,14 @@ export const LAIR_LEVELUP_EVERY = 420; // s alive -> +1 monster level
 export const LAIR_LEVELUP_CAP = 3;     // escalation ceiling: endgame must stay winnable
 
 export const BUILDINGS = {
-  palace:    { label: 'Palace',          cost: 0,   hp: 1100, w: 2, h: 2, sight: 8, income: 12 }, // royal trickle: economy can never fully stall
-  house:     { label: 'House',           cost: 80,  hp: 120, w: 1, h: 1, sight: 3, income: 4, max: 6 },
-  market:    { label: 'Marketplace',     cost: 350, hp: 250, w: 1, h: 1, sight: 4, income: 20 },
-  blacksmith:{ label: 'Blacksmith',      cost: 400, hp: 250, w: 1, h: 1, sight: 4 },
-  guild_warrior: { label: 'Warriors Guild', cost: 350, hp: 300, w: 1, h: 1, sight: 4, hires: 'warrior', cap: 3 },
-  guild_ranger:  { label: 'Rangers Guild',  cost: 350, hp: 300, w: 1, h: 1, sight: 4, hires: 'ranger', cap: 3 },
-  guild_wizard:  { label: 'Wizards Guild',  cost: 450, hp: 300, w: 1, h: 1, sight: 4, hires: 'wizard', cap: 3 },
-  guild_rogue:   { label: 'Rogues Guild',   cost: 300, hp: 300, w: 1, h: 1, sight: 4, hires: 'rogue', cap: 3 },
+  palace:    { label: 'Дворец',          cost: 0,   hp: 1100, w: 2, h: 2, sight: 8, income: 12 }, // royal trickle: economy can never fully stall
+  house:     { label: 'Дом',           cost: 80,  hp: 120, w: 1, h: 1, sight: 3, income: 4, max: 6 },
+  market:    { label: 'Рынок',     cost: 350, hp: 250, w: 1, h: 1, sight: 4, income: 20 },
+  blacksmith:{ label: 'Кузница',      cost: 400, hp: 250, w: 1, h: 1, sight: 4 },
+  guild_warrior: { label: 'Гильдия воинов', cost: 350, hp: 300, w: 1, h: 1, sight: 4, hires: 'warrior', cap: 3 },
+  guild_ranger:  { label: 'Гильдия следопытов',  cost: 350, hp: 300, w: 1, h: 1, sight: 4, hires: 'ranger', cap: 3 },
+  guild_wizard:  { label: 'Гильдия магов',  cost: 450, hp: 300, w: 1, h: 1, sight: 4, hires: 'wizard', cap: 3 },
+  guild_rogue:   { label: 'Гильдия плутов',   cost: 300, hp: 300, w: 1, h: 1, sight: 4, hires: 'rogue', cap: 3 },
 };
 
 export const ECON = {

@@ -1,32 +1,32 @@
 import { pick, rand } from './rng.js';
 
-const FIRST = ['Bran', 'Aldric', 'Mira', 'Theo', 'Ysolt', 'Garen', 'Lira', 'Odo', 'Wynne', 'Cedric',
-  'Hilda', 'Rowan', 'Eda', 'Falk', 'Nim', 'Orla', 'Pip', 'Sable', 'Tova', 'Ulf',
-  'Vesna', 'Wren', 'Yorick', 'Zora', 'Ansel', 'Beryl', 'Corin', 'Dara', 'Edmund', 'Fia'];
-const EPITHET = ['the Bold', 'of the Vale', 'Swiftfoot', 'the Quiet', 'Ironhand', 'the Stray',
-  'of Oakhill', 'Longstride', 'the Unlucky', 'Brighteye', 'of the Mill', 'Threefingers',
-  'the Younger', 'Ashborn', 'the Stubborn', 'Quickwit', 'of Lowmarsh', 'Halfboot'];
+const FIRST = ['Бран', 'Альдрик', 'Мира', 'Тео', 'Изольда', 'Гарен', 'Лира', 'Одо', 'Винна', 'Седрик',
+  'Хильда', 'Рован', 'Эда', 'Фальк', 'Ним', 'Орла', 'Пип', 'Сабля', 'Това', 'Ульф',
+  'Весна', 'Врен', 'Йорик', 'Зора', 'Ансель', 'Берил', 'Корин', 'Дара', 'Эдмунд', 'Фия'];
+const EPITHET = ['Смелый', 'из Долины', 'Быстроногий', 'Тихоня', 'Железная Рука', 'Приблудный',
+  'из Дубравы', 'Длинный Шаг', 'Невезучий', 'Ясноглазый', 'с Мельницы', 'Трёхпалый',
+  'Младший', 'Пепельный', 'Упрямый', 'Остроум', 'из Низин', 'Полусапог'];
 
 export function heroName(state) {
   return rand(state) < 0.55 ? `${pick(state, FIRST)} ${pick(state, EPITHET)}` : pick(state, FIRST);
 }
 
-// Most extreme deviation from class baseline becomes the visible personality label
+// Самое сильное отклонение от классового baseline становится видимым характером героя
 export function traitLabel(traits, baseline) {
   const checks = [
-    ['courage', -1, 'Coward'], ['courage', +1, 'Brave'],
-    ['greed', +1, 'Greedy'], ['greed', -1, 'Selfless'],
-    ['diligence', +1, 'Restless'], ['diligence', -1, 'Lazy'],
+    ['courage', -1, 'Трус'], ['courage', +1, 'Храбрец'],
+    ['greed', +1, 'Жадина'], ['greed', -1, 'Бессребреник'],
+    ['diligence', +1, 'Непоседа'], ['diligence', -1, 'Лентяй'],
   ];
-  let best = null, bestDev = 0.08; // require a meaningful deviation
+  let best = null, bestDev = 0.08; // отклонение должно быть заметным
   for (const [key, sign, label] of checks) {
     const dev = (traits[key] - baseline[key]) * sign;
     if (dev > bestDev) { bestDev = dev; best = label; }
   }
   if (best) return best;
-  // fall back to absolute extremes
-  if (traits.courage < 0.3) return 'Coward';
-  if (traits.greed > 0.8) return 'Greedy';
-  if (traits.courage > 0.75) return 'Brave';
-  return 'Steady';
+  // абсолютные крайности как запасной вариант
+  if (traits.courage < 0.3) return 'Трус';
+  if (traits.greed > 0.8) return 'Жадина';
+  if (traits.courage > 0.75) return 'Храбрец';
+  return 'Невозмутимый';
 }

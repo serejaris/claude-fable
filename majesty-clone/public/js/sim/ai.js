@@ -2,7 +2,7 @@
 // Personality (courage/greed/diligence) enters ONLY as utility weights — never as code branches.
 // Buckets: SURVIVAL > COMBAT > FLAGS > NEEDS > AMBIENT.
 
-import { CLASSES, ECON, AI, BUILDINGS, MAP_W, MAP_H, TILE, SIM_DT } from './data.js';
+import { CLASSES, ECON, AI, BUILDINGS, MONSTERS, MAP_W, MAP_H, TILE, SIM_DT } from './data.js';
 import { rand, randRange, randInt, clamp } from './rng.js';
 import { dist, findPath, moveAlong, heroPower, monsterPower, isMonsterVisible,
   updateVisibility, isExplored, centerOf, txOf, palace, isPassable } from './world.js';
@@ -43,7 +43,7 @@ function survivalCheck(state, h, now) {
     // cornered heroes fight: no flee-loop at the doorstep of home
     const home = state.buildings.find(b => b.id === h.home) || palace(state);
     if (!home || dist(h, home) > 100) {
-      setAction(state, h, { type: 'flee' }, `fleeing! (outmatched ${threat.toFixed(1)}x)`);
+      setAction(state, h, { type: 'flee' }, `бежит! (перевес врага ${threat.toFixed(1)}×)`);
       return true;
     }
   }
@@ -55,7 +55,7 @@ function survivalCheck(state, h, now) {
       state.events.push({ t: 'potion', id: h.id, x: h.x, y: h.y });
       return false;
     }
-    setAction(state, h, { type: 'retreat' }, 'retreating to heal');
+    setAction(state, h, { type: 'retreat' }, 'отходит лечиться');
     return true;
   }
   return false;
@@ -107,7 +107,7 @@ function think(state, h, now) {
       bounty, threat, d,
       novelty: 0,
     }) * crowding;
-    candidates.push({ bucket: 2, score, type: 'fight', targetId: m.id, why: `fight ${m.type}` });
+    candidates.push({ bucket: 2, score, type: 'fight', targetId: m.id, alarm: attackingKingdom, why: `fight ${m.type}` });
     if (debug) debug.push({ what: `fight ${m.type} L${m.level}${attackingKingdom ? ' (alarm)' : ''}`, score, threat: threat.toFixed(2), d: Math.round(d), bounty });
   }
 
@@ -175,9 +175,12 @@ function think(state, h, now) {
 
   if (!chosen) { idleAction(state, h); return; }
 
-  // commitment: keep current action unless new beats it by margin
+  // commitment: keep current action unless new beats it by margin.
+  // Shopping trips are sticky — a hero that decided to go shopping GOES shopping
+  // (the famous Majesty idiot heading to the market mid-siege); survival still overrides.
   if (h.action && h.action.score && sameAction(h.action, chosen) === false) {
-    if (chosen.score < h.action.score * AI.commitMargin && actionStillValid(state, h)) return;
+    const margin = (h.action.type === 'shop' && !chosen.alarm) ? 2.0 : AI.commitMargin; // alarm pierces the shopping trip
+    if (chosen.score < h.action.score * margin && actionStillValid(state, h)) return;
     // abandoning a target -> short cooldown so we don't dither back
     if (h.action.targetId) h.ignore[h.action.targetId] = now + AI.targetCooldown;
   }
@@ -239,15 +242,17 @@ function needsCandidates(state, h, candidates, debug) {
     candidates.push({ bucket: 2, score, type: 'shop', targetId: market.id, item: 'potion', why: 'buy potion' });
     if (debug) debug.push({ what: 'buy potion', score });
   }
-  // gear upgrades when rich
+  // gear upgrades: the richer the hero, the louder the shop calls
   if (smith) {
     const wPrice = ECON.weaponPrices[h.weaponTier];
     const aPrice = ECON.armorPrices[h.armorTier];
     if (wPrice && h.gold >= wPrice) {
-      candidates.push({ bucket: 2, score: 0.5, type: 'shop', targetId: smith.id, item: 'weapon', why: `buy weapon t${h.weaponTier + 1}` });
-      if (debug) debug.push({ what: `weapon t${h.weaponTier + 1}`, score: 0.45 });
+      const score = 0.4 + 0.5 * Math.min(h.gold / (wPrice * 2), 1);
+      candidates.push({ bucket: 2, score, type: 'shop', targetId: smith.id, item: 'weapon', why: `buy weapon t${h.weaponTier + 1}` });
+      if (debug) debug.push({ what: `weapon t${h.weaponTier + 1}`, score });
     } else if (aPrice && h.gold >= aPrice) {
-      candidates.push({ bucket: 2, score: 0.45, type: 'shop', targetId: smith.id, item: 'armor', why: `buy armor t${h.armorTier + 1}` });
+      const score = 0.35 + 0.5 * Math.min(h.gold / (aPrice * 2), 1);
+      candidates.push({ bucket: 2, score, type: 'shop', targetId: smith.id, item: 'armor', why: `buy armor t${h.armorTier + 1}` });
     }
   }
   // rest at guild when scuffed and nothing urgent
@@ -293,24 +298,26 @@ function startAction(state, h, chosen, now) {
   if (h.action && sameAction(h.action, chosen)) { h.action.score = chosen.score; return; }
   h.action = { ...chosen, path: null, stuckTicks: 0 };
   const intents = {
-    fight: () => `hunting ${nameOfTarget(state, chosen.targetId)}`,
-    flag: () => `answering the call (${flagOf(state, chosen.targetId)?.bounty || 0}g)`,
-    lair: () => `assaulting ${nameOfTarget(state, chosen.targetId)}`,
-    pickup: () => 'grabbing loot',
-    shop: () => chosen.item === 'potion' ? 'going shopping (potion)' : `going shopping (${chosen.item})`,
-    rest: () => 'heading home to rest',
-    explore: () => 'wandering into the unknown',
-    patrol: () => 'patrolling',
+    fight: () => `охотится: ${nameOfTarget(state, chosen.targetId)}`,
+    flag: () => `идёт за наградой (${flagOf(state, chosen.targetId)?.bounty || 0} зол.)`,
+    lair: () => `штурмует: ${nameOfTarget(state, chosen.targetId)}`,
+    pickup: () => 'подбирает золото',
+    shop: () => `идёт за покупками (${ITEM_RU[chosen.item]})`,
+    rest: () => 'идёт домой отдыхать',
+    explore: () => 'уходит в неизведанное',
+    patrol: () => 'патрулирует',
   };
   h.intent = (intents[chosen.type] || (() => chosen.why))();
 }
 
 const sameAction = (a, b) => a.type === b.type && a.targetId === b.targetId && a.item === b.item;
 
+const ITEM_RU = { potion: 'зелье', weapon: 'оружие', armor: 'броня' };
+
 function nameOfTarget(state, id) {
-  const m = state.monsters.find(m => m.id === id); if (m) return `a ${m.type}`;
+  const m = state.monsters.find(m => m.id === id); if (m) return MONSTERS[m.type].label;
   const l = state.lairs.find(l => l.id === id); if (l) return l.label;
-  return 'a foe';
+  return 'врага';
 }
 const flagOf = (state, id) => state.flags.find(f => f.id === id);
 
@@ -338,7 +345,7 @@ function executeAction(state, h, now) {
     case 'flee': {
       const home = state.buildings.find(b => b.id === h.home) || palace(state);
       const safe = !state.monsters.some(m => m.hp > 0 && dist(h, m) < 200 && m.targetId === h.id);
-      if (!home || (safe && dist(h, home) < 300)) { h.action = null; h.intent = 'catching breath'; return; }
+      if (!home || (safe && dist(h, home) < 300)) { h.action = null; h.intent = 'переводит дух'; return; }
       partingShot(state, h, cls);
       goToward(state, h, home.x, home.y, cls.speed * 1.3);
       if (dist(h, home) < 50) { h.action = null; }
@@ -357,8 +364,8 @@ function executeAction(state, h, now) {
           state.events.push({ t: 'dues', id: h.id, amount: dues, x: home.x, y: home.y });
         }
         h.hp = Math.min(h.maxHp, h.hp + h.maxHp * AI.guildHealRate * SIM_DT);
-        h.intent = 'resting at home';
-        if (h.hp >= h.maxHp * 0.95) h.action = null;
+        h.intent = 'отдыхает дома';
+        if (h.hp >= h.maxHp * 0.95) { h.action = null; queueErrand(state, h); }
         return;
       }
       partingShot(state, h, cls);
@@ -418,9 +425,9 @@ function executeAction(state, h, now) {
           a.paidDues = true;
           state.events.push({ t: 'dues', id: h.id, amount: dues, x: b.x, y: b.y });
         }
-        h.intent = 'resting at guild';
+        h.intent = 'отдыхает в гильдии';
         h.hp = Math.min(h.maxHp, h.hp + h.maxHp * AI.guildHealRate * SIM_DT);
-        if (h.hp >= h.maxHp) h.action = null;
+        if (h.hp >= h.maxHp) { h.action = null; queueErrand(state, h); }
       } else goToward(state, h, b.x, b.y, cls.speed);
       return;
     }
@@ -455,7 +462,7 @@ function attackTarget(state, h, target, cls) {
       h.ignore[target.id] = now + AI.targetCooldown * 2;
       if (h.action && h.action.targetId) h.ignore[h.action.targetId] = now + AI.targetCooldown * 2;
       h.action = null;
-      h.intent = `too dangerous for me (L${h.level})`;
+      h.intent = `слишком опасно для меня (ур. ${h.level})`;
       state.events.push({ t: 'decline', id: h.id, x: h.x, y: h.y });
       return;
     }
@@ -512,6 +519,23 @@ function goToward(state, h, x, y, speed) {
   return done;
 }
 
+// home routine: rested heroes run their errands before heading back out —
+// the canonical Majesty cycle (return -> bank dues -> shop -> back to the field)
+function queueErrand(state, h) {
+  const smith = state.buildings.find(b => b.type === 'blacksmith');
+  const market = state.buildings.find(b => b.type === 'market');
+  const wPrice = smith ? ECON.weaponPrices[h.weaponTier] : 0;
+  const aPrice = smith ? ECON.armorPrices[h.armorTier] : 0;
+  let action = null;
+  if (wPrice && h.gold >= wPrice) action = { type: 'shop', targetId: smith.id, item: 'weapon', score: 0.9 };
+  else if (aPrice && h.gold >= aPrice) action = { type: 'shop', targetId: smith.id, item: 'armor', score: 0.9 };
+  else if (market && h.potions < 2 && h.gold >= ECON.potionPrice) action = { type: 'shop', targetId: market.id, item: 'potion', score: 0.7 };
+  if (!action) return;
+  h.action = { ...action, path: null, stuckTicks: 0 };
+  h.intent = `идёт за покупками (${ITEM_RU[action.item]})`;
+  h.thinkAt = state.tick + 30; // the errand gets a head start before utility competition resumes
+}
+
 function doPurchase(state, h, item) {
   let price = 0;
   if (item === 'potion') {
@@ -532,7 +556,7 @@ function doPurchase(state, h, item) {
   state.gold += tax;
   state.stats.taxes += tax;
   state.stats.drains += price - tax;
-  state.events.push({ t: 'purchase', id: h.id, item, price, tax, x: h.x, y: h.y });
+  state.events.push({ t: 'purchase', id: h.id, name: h.name, item, price, tax, x: h.x, y: h.y });
 }
 
 export function completeExploreFlag(state, f) {
@@ -551,5 +575,5 @@ export function completeExploreFlag(state, f) {
 function idleAction(state, h) {
   // a persistent no-op action: without it the `!h.action` clause re-runs think every tick
   h.action = { type: 'idle' };
-  h.intent = 'idling about';
+  h.intent = 'бездельничает';
 }

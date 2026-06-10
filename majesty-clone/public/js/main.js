@@ -32,7 +32,7 @@ const actions = {
   },
   hire(guild) {
     const h = hireHero(game.state, guild);
-    if (h) ui.chronicle(`⚔ ${h.name} the ${CLASSES[h.cls].label} joins (${h.label})`, 'good');
+    if (h) ui.chronicle(`⚔ ${h.name} — ${CLASSES[h.cls].label} — на службе (${h.label})`, 'good');
   },
   flagOn(target) {
     const f = placeFlag(game.state, 'attack', { x: target.x, y: target.y, targetId: target.id });
@@ -61,7 +61,7 @@ function boot(seed, fresh = false) {
     ui.showHelp();
     try { localStorage.setItem('majesty-clone-helped', '1'); } catch { /* ignore */ }
   }
-  if (loaded) ui.toast('Chronicle restored.');
+  if (loaded) ui.toast('Летопись восстановлена.');
 }
 boot(((Math.random() * 1e9) | 0) >>> 0);
 
@@ -82,40 +82,45 @@ function consumeEvents(state) {
         break;
       case 'hero-death':
         vfx.push({ kind: 'text', text: `☠ ${e.name}`, x: e.x, y: e.y - 10, color: '#d65b4a', big: true, t0: performance.now(), dur: 1600 });
-        ui.chronicle(`☠ ${e.name} has fallen`, 'bad');
+        ui.chronicle(`☠ ${e.name} пал в бою`, 'bad');
         break;
       case 'levelup':
-        vfx.push({ kind: 'text', text: `✦ Level ${e.level}`, x: e.x, y: e.y - 18, color: '#e9c95a', big: true, t0: performance.now(), dur: 1300 });
+        vfx.push({ kind: 'text', text: `✦ Уровень ${e.level}`, x: e.x, y: e.y - 18, color: '#e9c95a', big: true, t0: performance.now(), dur: 1300 });
         break;
       case 'bounty':
       case 'pickup':
-        vfx.push({ kind: 'text', text: `+${e.amount}g`, x: e.x, y: e.y - 12, color: '#e9c95a', t0: performance.now(), dur: 900 });
+        vfx.push({ kind: 'text', text: `+${e.amount} зол.`, x: e.x, y: e.y - 12, color: '#e9c95a', t0: performance.now(), dur: 900 });
         break;
-      case 'purchase':
-        vfx.push({ kind: 'text', text: `tax +${e.tax}g`, x: e.x, y: e.y - 20, color: '#b8d178', t0: performance.now(), dur: 1000 });
+      case 'purchase': {
+        // покупка должна быть видна: герой реально проапгрейдился
+        const labels = { weapon: '⚔ новое оружие!', armor: '🛡 новая броня!', potion: '🧪 зелье' };
+        vfx.push({ kind: 'text', text: labels[e.item] || 'покупка', x: e.x, y: e.y - 14, color: '#e9c95a', big: e.item !== 'potion', t0: performance.now(), dur: 1500 });
+        vfx.push({ kind: 'text', text: `налог +${e.tax} зол.`, x: e.x, y: e.y - 30, color: '#b8d178', t0: performance.now(), dur: 1000 });
+        if (e.item !== 'potion') ui.chronicle(`${labels[e.item]} ${e.name} потратился в кузнице (${e.price} зол.)`, 'good');
         break;
+      }
       case 'dues':
-        vfx.push({ kind: 'text', text: `dues +${e.amount}g`, x: e.x, y: e.y - 22, color: '#b8d178', t0: performance.now(), dur: 1100 });
+        vfx.push({ kind: 'text', text: `десятина +${e.amount} зол.`, x: e.x, y: e.y - 22, color: '#b8d178', t0: performance.now(), dur: 1100 });
         break;
       case 'income':
-        if (Math.random() < 0.3) vfx.push({ kind: 'text', text: `+${e.amount}g`, x: e.x, y: e.y - 16, color: 'rgba(233,201,90,0.7)', t0: performance.now(), dur: 800 });
+        if (Math.random() < 0.3) vfx.push({ kind: 'text', text: `+${e.amount}`, x: e.x, y: e.y - 16, color: 'rgba(233,201,90,0.7)', t0: performance.now(), dur: 800 });
         break;
       case 'discover':
-        ui.chronicle(`🗺 Scouts report: ${e.label} discovered!`, 'warn');
+        ui.chronicle(`🗺 Разведчики доносят: обнаружено — ${e.label}!`, 'warn');
         break;
       case 'lair-down':
-        vfx.push({ kind: 'text', text: `⚑ ${e.label} destroyed!`, x: e.x, y: e.y - 16, color: '#e9c95a', big: true, t0: performance.now(), dur: 2200 });
-        ui.chronicle(`⚑ ${e.label} destroyed!`, 'good');
+        vfx.push({ kind: 'text', text: `⚑ ${e.label} — уничтожено!`, x: e.x, y: e.y - 16, color: '#e9c95a', big: true, t0: performance.now(), dur: 2200 });
+        ui.chronicle(`⚑ ${e.label} — уничтожено!`, 'good');
         break;
       case 'wave':
-        if (e.size >= 3) ui.chronicle(`⚠ A warband approaches (${e.size})`, 'bad');
+        if (e.size >= 3) ui.chronicle(`⚠ К королевству идёт отряд (${e.size})`, 'bad');
         break;
       case 'building-down':
-        ui.chronicle(`🔥 ${BUILDINGS[e.type].label} destroyed`, 'bad');
+        ui.chronicle(`🔥 ${BUILDINGS[e.type].label}: здание разрушено`, 'bad');
         vfx.push({ kind: 'flash', x: e.x, y: e.y, color: '#d4742c', t0: performance.now(), dur: 700 });
         break;
       case 'decline':
-        vfx.push({ kind: 'text', text: 'not worth it…', x: e.x, y: e.y - 16, color: '#d8c9a3', t0: performance.now(), dur: 1300 });
+        vfx.push({ kind: 'text', text: 'не стоит того…', x: e.x, y: e.y - 16, color: '#d8c9a3', t0: performance.now(), dur: 1300 });
         break;
       case 'hire':
         break;
@@ -237,7 +242,7 @@ function handleClick(sx, sy) {
     const tx = txOf(w.x), ty = txOf(w.y);
     if (canPlace(state, type, tx, ty) && state.gold >= BUILDINGS[type].cost) {
       const b = addBuilding(state, type, tx, ty);
-      if (b) ui.chronicle(`🏗 ${BUILDINGS[type].label} built`, 'good');
+      if (b) ui.chronicle(`🏗 ${BUILDINGS[type].label}: построено`, 'good');
       if (!BUILDINGS[type].max) game.view.mode = null;
     }
     return;
