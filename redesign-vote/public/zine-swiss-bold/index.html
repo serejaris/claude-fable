@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>СЕРЕЖА РИС — зин на сетке про вайбкодинг и Claude Code</title>
+<meta name="description" content="Самиздат про вайбкодинг, Claude Code и AI-агентов. Панк, посаженный на швейцарскую модульную сетку.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=PT+Mono&family=Caveat:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#e9e5d9;
+    --paper-2:#e1dccd;
+    --card:#f6f2e6;
+    --ink:#161412;
+    --shock:#ff1f6b;
+    --grid:rgba(22,20,18,.5);        /* служебный серый сетки */
+    --grid-soft:rgba(22,20,18,.14);
+    --hair:rgba(22,20,18,.22);
+    --max:1180px;
+    --pad:28px;
+    --gut:18px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+  body{
+    font-family:"Inter Tight","Helvetica Neue",Arial,sans-serif;
+    color:var(--ink);
+    background:var(--paper);
+    background-image:
+      repeating-linear-gradient(1.5deg, rgba(0,0,0,.020) 0 2px, transparent 2px 7px),
+      repeating-linear-gradient(91deg, rgba(0,0,0,.013) 0 1px, transparent 1px 5px),
+      radial-gradient(ellipse at 28% 14%, rgba(255,255,255,.32), transparent 58%),
+      linear-gradient(var(--paper), var(--paper-2));
+    line-height:1.5;
+    letter-spacing:-0.005em;
+    overflow-x:hidden;
+    font-feature-settings:"tnum" 1;
+  }
+  /* ксерокс-шум поверх всего */
+  body::before{
+    content:"";position:fixed;inset:0;z-index:80;pointer-events:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='280' height='280'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    opacity:.085;mix-blend-mode:multiply;
+  }
+  /* затемнение краёв — лист на стекле ксерокса */
+  body::after{
+    content:"";position:fixed;inset:0;z-index:79;pointer-events:none;
+    background:radial-gradient(125% 100% at 50% 42%, transparent 64%, rgba(20,16,10,.18) 100%);
+  }
+  a{color:inherit;text-decoration:none}
+  ::selection{background:var(--shock);color:#fff}
+
+  /* ============ ВИДИМАЯ ШВЕЙЦАРСКАЯ СЕТКА (чертёж) ============ */
+  .grid-overlay{
+    position:fixed;inset:0;z-index:1;pointer-events:none;
+    max-width:var(--max);margin:0 auto;
+    padding:0 var(--pad);
+    display:grid;grid-template-columns:repeat(12,1fr);column-gap:var(--gut);
+  }
+  .grid-overlay span{
+    position:relative;
+    border-left:1px solid var(--grid-soft);
+  }
+  .grid-overlay span:last-child{border-right:1px solid var(--grid-soft)}
+  /* номера колонок сверху — системная разметка чертежа */
+  .grid-overlay span::before{
+    content:attr(data-c);
+    position:absolute;top:6px;left:3px;
+    font-family:"PT Mono",monospace;font-size:8px;letter-spacing:.1em;
+    color:var(--grid);opacity:.55;
+  }
+
+  .shell{
+    position:relative;z-index:2;
+    max-width:var(--max);margin:0 auto;padding:0 var(--pad);
+  }
+
+  /* системная метка-модуль (как координата на чертеже) */
+  .sys{
+    font-family:"PT Mono",monospace;
+    font-size:10.5px;font-weight:400;
+    text-transform:uppercase;letter-spacing:.16em;
+    color:var(--grid);
+  }
+  .sys b{color:var(--shock);font-weight:400}
+
+  /* ============ ШАПКА-РЕГИСТР ============ */
+  .topbar{
+    display:grid;grid-template-columns:repeat(12,1fr);column-gap:var(--gut);
+    align-items:center;
+    padding:16px 0 12px;
+    border-bottom:2px solid var(--ink);
+  }
+  .topbar .brand{grid-column:1 / 6;display:flex;align-items:center;gap:10px}
+  .topbar .brand .blot{width:11px;height:11px;background:var(--shock);transform:rotate(8deg)}
+  .topbar nav{grid-column:6 / 13;display:flex;justify-content:flex-end;gap:22px;flex-wrap:wrap}
+  .topbar nav a{position:relative}
+  .topbar nav a:hover{color:var(--shock)}
+
+  /* ============ HERO: модуль с ransom-note ============ */
+  header.hero{
+    display:grid;grid-template-columns:repeat(12,1fr);column-gap:var(--gut);
+    padding:30px 0 0;
+    position:relative;
+  }
+  .hero .coord-l{
+    grid-column:1 / 3;
+    padding-top:8px;
+  }
+  .hero .coord-l .big{
+    font-weight:900;font-size:clamp(38px,5vw,60px);line-height:.86;
+    letter-spacing:-.04em;color:var(--shock);
+  }
+  .hero .coord-l .sys{display:block;margin-top:10px}
+
+  .hero .ransom-wrap{grid-column:3 / 13;position:relative}
+  .ransom{
+    font-size:clamp(2.4rem, 9vw, 6.4rem);
+    line-height:.96;letter-spacing:.01em;user-select:none;
+    margin-bottom:6px;
+  }
+  .ransom span{display:inline-block;padding:.02em .1em;margin:.02em .01em}
+  .r1{font-family:'Inter Tight';font-weight:900;background:var(--ink);color:var(--paper);transform:rotate(-1.5deg)}
+  .r2{font-family:'PT Mono',monospace;font-weight:700;background:#fff;transform:rotate(1.4deg);box-shadow:2px 2px 0 var(--ink)}
+  .r3{font-family:'Inter Tight';font-weight:900;background:var(--shock);color:#fff;transform:rotate(-1deg)}
+  .r4{font-family:'PT Mono',monospace;border:2.5px solid var(--ink);transform:rotate(1.5deg);background:var(--paper)}
+  .r5{font-family:'Inter Tight';font-weight:900;background:#fff;transform:rotate(1.2deg);outline:2px dashed var(--ink);outline-offset:-5px}
+  .r6{font-family:'PT Mono',monospace;font-weight:700;background:var(--ink);color:var(--shock);transform:rotate(-1.5deg)}
+  .gap{display:inline-block;width:.28em}
+  .r7{font-family:'Inter Tight';font-weight:900;background:#fff;transform:rotate(-1.2deg);box-shadow:-2px 2px 0 var(--shock)}
+  .r8{font-family:'PT Mono',monospace;font-weight:700;background:var(--shock);color:var(--ink);transform:rotate(1.5deg)}
+  .r9{font-family:'Inter Tight';font-weight:900;background:var(--ink);color:var(--paper);transform:rotate(1deg)}
+
+  .tagline{
+    display:inline-block;margin-top:10px;
+    font-family:"PT Mono",monospace;font-size:.82rem;
+    background:var(--ink);color:var(--paper);
+    padding:6px 13px;transform:rotate(-1deg);
+    text-transform:uppercase;letter-spacing:.06em;
+  }
+  .tagline em{font-style:normal;color:var(--shock)}
+
+  /* блок идентичности — вырезка со скотчем, посаженная в сетку */
+  .who-row{
+    display:grid;grid-template-columns:repeat(12,1fr);column-gap:var(--gut);
+    margin-top:42px;align-items:start;
+    border-top:1px solid var(--hair);padding-top:26px;
+  }
+  .who-row .sys-col{grid-column:1 / 3;padding-top:6px}
+  .who{
+    grid-column:3 / 10;position:relative;
+    background:var(--card);padding:24px 26px 22px;
+    transform:rotate(-1deg);
+    box-shadow:3px 4px 9px rgba(0,0,0,.2);
+  }
+  .who p{font-family:"PT Mono",monospace;font-size:.92rem;line-height:1.6}
+  .who .hl{background:linear-gradient(104deg,transparent 2%,rgba(255,31,107,.5) 6%,rgba(255,31,107,.42) 94%,transparent 98%);padding:0 3px}
+  .who .scrawl{
+    font-family:'Caveat',cursive;font-size:1.4rem;font-weight:700;color:var(--shock);
+    display:block;margin-top:12px;transform:rotate(-1deg);
+  }
+  .who-note{
+    grid-column:10 / 13;align-self:center;
+    font-family:'Caveat',cursive;font-size:1.3rem;line-height:1.1;
+    transform:rotate(3deg);color:var(--ink);
+  }
+  .who-note .arr{display:block;font-size:1.9rem;transform:scaleX(-1);line-height:.7;color:var(--shock)}
+
+  /* ============ СЕКЦИОННЫЙ ЗАГОЛОВОК-ЧЕРТЁЖ ============ */
+  .sec-head{
+    display:grid;grid-template-columns:repeat(12,1fr);column-gap:var(--gut);
+    align-items:baseline;
+    margin-top:78px;padding:14px 0;
+    border-top:2px solid var(--ink);border-bottom:1px solid var(--hair);
+  }
+  .sec-head .no{
+    grid-column:1 / 3;
+    font-weight:900;font-size:30px;letter-spacing:-.03em;line-height:1;
+  }
+  .sec-head .no::after{content:"";display:inline-block;width:8px;height:8px;background:var(--shock);margin-left:9px}
+  .sec-head .title{
+    grid-column:3 / 9;
+    font-family:"PT Mono",monospace;font-size:.82rem;text-transform:uppercase;letter-spacing:.18em;
+    align-self:center;
+  }
+  .sec-head .scrawl{
+    grid-column:9 / 13;text-align:right;
+    font-family:'Caveat',cursive;font-size:1.25rem;font-weight:700;color:var(--shock);
+    transform:rotate(-2deg);align-self:center;
+  }
+
+  /* ============ FEATURED: большой модуль ============ */
+  .featured{
+    display:grid;grid-template-columns:repeat(12,1fr);column-gap:var(--gut);
+    padding:38px 0 12px;position:relative;
+  }
+  .featured .f-meta{grid-column:1 / 3;display:flex;flex-direction:column;gap:12px;padding-top:6px}
+  .featured .f-body{
+    grid-column:3 / 12;position:relative;
+    background:#fbf8ee;border:3px solid var(--ink);
+    padding:30px 32px 28px;transform:rotate(.8deg);
+    box-shadow:6px 7px 0 rgba(0,0,0,.55);
+  }
+  .featured .f-body::after{ /* загнутый угол */
+    content:"";position:absolute;right:0;bottom:0;width:42px;height:42px;
+    background:linear-gradient(315deg,var(--paper-2) 0 49%,rgba(0,0,0,.26) 50%,#efe9d9 52%,#f3eede 100%);
+  }
+  .tape{
+    position:absolute;width:96px;height:27px;
+    background:rgba(252,250,235,.5);
+    box-shadow:0 1px 3px rgba(0,0,0,.25);
+    background-image:repeating-linear-gradient(90deg,rgba(255,255,255,.25) 0 3px,transparent 3px 6px);
+    border-left:1px dashed rgba(0,0,0,.12);border-right:1px dashed rgba(0,0,0,.12);
+    z-index:5;
+  }
+  .tape.tl{top:-13px;left:-18px;transform:rotate(-36deg)}
+  .tape.tr{top:-13px;right:-18px;transform:rotate(34deg)}
+  .tape.tc{top:-14px;left:50%;transform:translateX(-50%) rotate(-2deg)}
+  .sticker-new{
+    position:absolute;top:-30px;left:-30px;z-index:8;
+    font-family:'Inter Tight';font-weight:900;font-size:1rem;
+    text-transform:uppercase;letter-spacing:.02em;
+    background:var(--shock);color:#fff;
+    width:118px;height:118px;
+    display:flex;align-items:center;justify-content:center;text-align:center;
+    transform:rotate(-12deg);
+    clip-path:polygon(50% 0,61% 12%,75% 5%,79% 19%,95% 16%,91% 31%,100% 38%,92% 50%,100% 62%,89% 69%,95% 84%,79% 81%,75% 95%,61% 88%,50% 100%,39% 88%,25% 95%,21% 81%,5% 84%,11% 69%,0 62%,8% 50%,0 38%,9% 31%,5% 16%,21% 19%,25% 5%,39% 12%);
+  }
+  .featured .kicker{
+    font-family:"PT Mono",monospace;font-size:.7rem;text-transform:uppercase;letter-spacing:.2em;
+    border-bottom:2px solid var(--ink);display:inline-block;padding-bottom:3px;margin-bottom:14px;
+  }
+  .featured h2{
+    font-weight:900;font-size:clamp(1.7rem,4.6vw,2.7rem);line-height:1.02;
+    letter-spacing:-.03em;text-transform:uppercase;margin-bottom:14px;max-width:15ch;
+  }
+  .featured h2 a{background:linear-gradient(transparent 68%,rgba(255,31,107,.55) 68%)}
+  .featured h2 a:hover{color:var(--shock)}
+  .featured .date{
+    display:inline-block;font-family:"PT Mono",monospace;font-size:.8rem;letter-spacing:.1em;
+    border:2px solid var(--ink);padding:2px 10px;transform:rotate(-2deg);margin-bottom:14px;
+    background:rgba(255,255,255,.5);
+  }
+  .featured p.desc{font-family:"PT Mono",monospace;font-size:.9rem;line-height:1.6;max-width:54ch}
+  .featured .go{
+    display:inline-block;margin-top:18px;
+    font-family:"PT Mono",monospace;font-weight:700;font-size:.86rem;
+    background:var(--ink);color:var(--paper);padding:10px 18px;
+    transform:rotate(-1deg);box-shadow:3px 3px 0 var(--shock);
+  }
+  .featured .go:hover{background:var(--shock);color:#fff;box-shadow:3px 3px 0 var(--ink)}
+  .f-margin{
+    grid-column:1 / 3;
+    font-family:'Caveat',cursive;font-size:1.35rem;font-weight:700;color:var(--shock);
+    transform:rotate(-4deg);margin-top:18px;line-height:1.05;
+  }
+
+  /* ============ АРХИВ: вырезки на сетке ============ */
+  .clips{
+    display:grid;grid-template-columns:repeat(12,1fr);column-gap:var(--gut);row-gap:30px;
+    padding:40px 0 12px;
+  }
+  .clip{
+    grid-column:span 4;position:relative;
+    background:var(--card);padding:18px 18px 16px;
+    box-shadow:2px 3px 7px rgba(0,0,0,.22);
+    display:block;transition:transform .12s ease;
+  }
+  .clip:nth-child(3n+1){transform:rotate(-1.4deg)}
+  .clip:nth-child(3n+2){transform:rotate(1.2deg)}
+  .clip:nth-child(3n){transform:rotate(-.7deg)}
+  .clip:hover{transform:rotate(0) scale(1.03);z-index:9}
+  .clip::after{content:"";position:absolute;right:0;bottom:0;width:24px;height:24px;
+    background:linear-gradient(315deg,var(--paper-2) 0 49%,rgba(0,0,0,.24) 50%,#ece5d2 52%,#f1ebd9 100%)}
+  .clip .idx{
+    font-family:"PT Mono",monospace;font-size:9px;letter-spacing:.14em;color:var(--shock);
+    display:block;margin-bottom:5px;
+  }
+  .clip .d{font-family:"PT Mono",monospace;font-size:.72rem;letter-spacing:.1em;color:#5a554b;display:block;margin-bottom:7px}
+  .clip .t{font-family:"PT Mono",monospace;font-weight:400;font-size:.92rem;line-height:1.42;display:block}
+  .clip:hover .t{background:linear-gradient(transparent 60%,rgba(255,31,107,.45) 60%)}
+  .clip .pin{
+    position:absolute;top:-8px;left:50%;width:15px;height:15px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%,#fff 0 12%,var(--shock) 25%,#8f0030 95%);
+    box-shadow:0 2px 3px rgba(0,0,0,.4);transform:translateX(-50%);z-index:6;
+  }
+  .clip .scribble{
+    position:absolute;top:6px;right:10px;
+    font-family:'Caveat',cursive;font-size:1.1rem;font-weight:700;color:var(--shock);transform:rotate(7deg);
+  }
+
+  /* ============ ВИДЕО ============ */
+  .vhs-grid{
+    display:grid;grid-template-columns:repeat(12,1fr);column-gap:var(--gut);
+    padding:38px 0 12px;align-items:start;
+  }
+  .vhs-featured{
+    grid-column:1 / 7;position:relative;
+    background:#f8f4e8;border:3px solid var(--ink);padding:14px 14px 12px;
+    transform:rotate(-1deg);box-shadow:5px 5px 0 rgba(0,0,0,.5);display:block;
+  }
+  .vhs-featured img{width:100%;display:block;border:2px solid var(--ink);filter:grayscale(1) contrast(1.55) brightness(1.05)}
+  .vhs-featured .rec{
+    position:absolute;top:24px;left:24px;z-index:3;
+    font-family:"Inter Tight";font-weight:800;font-size:.74rem;letter-spacing:.16em;
+    background:var(--shock);color:#fff;padding:3px 9px;transform:rotate(-3deg);
+  }
+  .vhs-featured .cap{display:block;margin-top:11px;font-family:"PT Mono",monospace;font-weight:700;font-size:.86rem;line-height:1.4}
+  .vhs-featured .cap small{display:block;font-weight:400;letter-spacing:.1em;color:#5a554b;margin-top:5px}
+  .vhs-list{grid-column:7 / 13;display:flex;flex-direction:column;gap:16px}
+  .vhs-item{
+    display:flex;gap:13px;align-items:flex-start;
+    background:var(--card);padding:11px;box-shadow:2px 2px 6px rgba(0,0,0,.2);position:relative;
+  }
+  .vhs-item:nth-child(odd){transform:rotate(1deg)}
+  .vhs-item:nth-child(even){transform:rotate(-1.2deg)}
+  .vhs-item:hover{transform:rotate(0)}
+  .vhs-item img{width:108px;height:61px;object-fit:cover;flex-shrink:0;border:2px solid var(--ink);filter:grayscale(1) contrast(1.6) brightness(1.04)}
+  .vhs-item .vt{font-family:"PT Mono",monospace;font-size:.8rem;font-weight:700;line-height:1.36}
+  .vhs-item .vd{font-family:"PT Mono",monospace;font-size:.7rem;letter-spacing:.1em;color:#5a554b;display:block;margin-top:4px}
+  .vhs-item:hover .vt{color:var(--shock)}
+
+  /* ============ ССЫЛКИ ============ */
+  .links-grid{
+    display:grid;grid-template-columns:repeat(12,1fr);column-gap:var(--gut);row-gap:var(--gut);
+    padding:38px 0 12px;
+  }
+  .link-cell{
+    grid-column:span 4;position:relative;
+    background:var(--card);padding:18px 18px 18px;
+    box-shadow:2px 3px 6px rgba(0,0,0,.2);display:flex;flex-direction:column;gap:7px;
+    transition:transform .1s ease;
+  }
+  .link-cell:nth-child(7n+1){transform:rotate(-1.2deg)}
+  .link-cell:nth-child(7n+2){transform:rotate(1deg)}
+  .link-cell:nth-child(7n+3){transform:rotate(-.6deg)}
+  .link-cell:nth-child(7n+4){transform:rotate(1.3deg)}
+  .link-cell:nth-child(7n+5){transform:rotate(-1deg)}
+  .link-cell:nth-child(7n+6){transform:rotate(.7deg)}
+  .link-cell:nth-child(7n){transform:rotate(-1.4deg)}
+  .link-cell:hover{transform:rotate(0) scale(1.03);z-index:9}
+  .link-cell .l-no{font-family:"PT Mono",monospace;font-size:9px;letter-spacing:.14em;color:var(--shock)}
+  .link-cell h3{font-weight:800;font-size:1.1rem;letter-spacing:-.02em;line-height:1.05}
+  .link-cell:hover h3{color:var(--shock)}
+  .link-cell p{font-family:"PT Mono",monospace;font-size:.74rem;line-height:1.5;color:#5a554b}
+
+  /* ============ ФУТЕР ============ */
+  footer{
+    display:grid;grid-template-columns:repeat(12,1fr);column-gap:var(--gut);
+    margin-top:72px;padding:22px 0 44px;align-items:baseline;
+    border-top:2px solid var(--ink);
+  }
+  footer .f-left{grid-column:1 / 6;display:flex;align-items:center;gap:9px}
+  footer .f-left .blot{width:9px;height:9px;background:var(--shock);transform:rotate(8deg)}
+  footer .f-scrawl{grid-column:6 / 10;font-family:'Caveat',cursive;font-size:1.3rem;font-weight:700;transform:rotate(-1deg);text-align:center}
+  footer .f-right{grid-column:10 / 13;text-align:right}
+
+  /* ============ МОБИЛКА ============ */
+  @media (max-width:880px){
+    .grid-overlay{display:none}
+    .topbar .brand{grid-column:1 / 13;margin-bottom:8px}
+    .topbar nav{grid-column:1 / 13;justify-content:flex-start;gap:16px}
+    .hero{padding-top:24px}
+    .hero .coord-l{grid-column:1 / 13;margin-bottom:14px}
+    .hero .ransom-wrap{grid-column:1 / 13}
+    .who-row .sys-col{grid-column:1 / 13;margin-bottom:10px}
+    .who{grid-column:1 / 13}
+    .who-note{grid-column:1 / 13;margin-top:14px;transform:rotate(-1deg)}
+    .who-note .arr{display:inline;transform:none}
+    .sec-head .no{grid-column:1 / 4}
+    .sec-head .title{grid-column:4 / 9}
+    .sec-head .scrawl{grid-column:9 / 13}
+    .featured .f-meta{grid-column:1 / 13;flex-direction:row;gap:18px;margin-bottom:16px}
+    .featured .f-body{grid-column:1 / 13;transform:rotate(0)}
+    .f-margin{grid-column:1 / 13;margin-top:14px}
+    .clip{grid-column:span 6}
+    .vhs-featured{grid-column:1 / 13;margin-bottom:24px}
+    .vhs-list{grid-column:1 / 13}
+    .link-cell{grid-column:span 6}
+  }
+  @media (max-width:560px){
+    :root{--pad:16px}
+    .ransom{font-size:clamp(2rem,13vw,3.2rem)}
+    .sticker-new{top:-24px;left:-10px;width:98px;height:98px;font-size:.85rem}
+    .featured .f-body{padding:24px 18px 22px}
+    .clip{grid-column:span 12}
+    .clip:nth-child(n){transform:rotate(0)}
+    .link-cell{grid-column:span 12}
+    .link-cell:nth-child(n){transform:rotate(0)}
+    .sec-head .scrawl{display:none}
+    footer .f-left,footer .f-scrawl,footer .f-right{grid-column:1 / 13;text-align:left;margin-bottom:6px}
+  }
+</style>
+</head>
+<body>
+
+<!-- видимая модульная сетка-чертёж -->
+<div class="grid-overlay" aria-hidden="true">
+  <span data-c="01"></span><span data-c="02"></span><span data-c="03"></span><span data-c="04"></span>
+  <span data-c="05"></span><span data-c="06"></span><span data-c="07"></span><span data-c="08"></span>
+  <span data-c="09"></span><span data-c="10"></span><span data-c="11"></span><span data-c="12"></span>
+</div>
+
+<div class="shell">
+
+  <!-- ===== РЕГИСТР ===== -->
+  <div class="topbar">
+    <div class="brand">
+      <span class="blot"></span>
+      <span class="sys">sereja.tech · <b>самиздат №1</b></span>
+    </div>
+    <nav class="sys">
+      <a href="#featured">Статьи</a>
+      <a href="#youtube">Видео</a>
+      <a href="#links">Явки</a>
+      <a href="https://t.me/ris_ai" target="_blank" rel="noopener">Telegram&nbsp;→</a>
+    </nav>
+  </div>
+
+  <!-- ===== HERO ===== -->
+  <header class="hero">
+    <div class="coord-l">
+      <div class="big">№1</div>
+      <span class="sys">июнь<br>2026</span>
+    </div>
+    <div class="ransom-wrap">
+      <h1 class="ransom" aria-label="Сережа Рис">
+        <span class="r1">С</span><span class="r2">Е</span><span class="r3">Р</span><span class="r4">Е</span><span class="r5">Ж</span><span class="r6">А</span><span class="gap"></span><span class="r7">Р</span><span class="r8">И</span><span class="r9">С</span>
+      </h1>
+      <p class="tagline">зин на сетке про вайбкодинг · <em>claude code</em> · ai-агентов</p>
+    </div>
+  </header>
+
+  <!-- ===== ИДЕНТИЧНОСТЬ ===== -->
+  <div class="who-row">
+    <div class="sys-col"><span class="sys">МОДУЛЬ&nbsp;00<br>кто это</span></div>
+    <div class="who">
+      <div class="tape tl"></div>
+      <div class="tape tr"></div>
+      <p>Архитектор агентных систем на Claude Code. <span class="hl">Не пишу код руками</span> — направляю агентов промптами. Веду телеграм-канал, снимаю на YouTube и собрал сообщество вайбкодеров на 2000+ человек.</p>
+      <span class="scrawl">всё, что здесь напечатано, — проверено руками. точнее, агентами.</span>
+    </div>
+    <div class="who-note"><span class="arr">↰</span>это я. честно — на сетке и всё равно дерзкий.</div>
+  </div>
+
+  <!-- ===== 01 FEATURED ===== -->
+  <div class="sec-head" id="featured">
+    <div class="no">01</div>
+    <div class="title">Главный материал номера</div>
+    <div class="scrawl">свежак, читать первым!</div>
+  </div>
+  <section class="featured">
+    <div class="f-meta">
+      <span class="sys"><b>10.06.2026</b></span>
+      <span class="sys">≈ 12 мин</span>
+      <span class="sys">разбор релиза</span>
+    </div>
+    <div class="f-body">
+      <div class="sticker-new">свежак!!!</div>
+      <div class="tape tc"></div>
+      <span class="kicker">эксклюзив выпуска</span>
+      <h2><a href="post.html">Перешёл на Claude Fable&nbsp;5: цены, effort, кейсы</a></h2>
+      <span class="date">10.06.2026</span>
+      <p class="desc">Anthropic выпустила новый класс моделей — Mythos. Вдвое дороже Opus, но cost per task сходится. Стрим в день релиза: шутер с деплоем за полчаса, арканоид с управлением рукой, клон Majesty и анти-кейс с 32 агентами.</p>
+      <a class="go" href="post.html">ЧИТАТЬ РАЗВОРОТ →</a>
+    </div>
+    <div class="f-margin">xhigh,<br>не max!! ←&nbsp;запомни</div>
+  </section>
+
+  <!-- ===== 02 АРХИВ ===== -->
+  <div class="sec-head">
+    <div class="no">02</div>
+    <div class="title">Архив вырезок · март—июнь 2026</div>
+    <div class="scrawl">приколото как было!</div>
+  </div>
+  <section class="clips" aria-label="Статьи">
+    <a class="clip" href="#"><span class="pin"></span><span class="idx">A.01</span><span class="d">30.04.2026</span><span class="t">OTel для Claude Code — рентген твоих скиллов</span></a>
+    <a class="clip" href="#"><span class="idx">A.02</span><span class="d">27.04.2026</span><span class="t">Свой Miro за 30 минут вместо подписки</span><span class="scribble">DIY!</span></a>
+    <a class="clip" href="#"><span class="pin"></span><span class="idx">A.03</span><span class="d">22.04.2026</span><span class="t">Как трекать задачи агентом в нескольких репо</span></a>
+    <a class="clip" href="#"><span class="idx">A.04</span><span class="d">22.04.2026</span><span class="t">Как я научил Claude Code писать техно-музыку</span><span class="scribble">бам-бам</span></a>
+    <a class="clip" href="#"><span class="pin"></span><span class="idx">A.05</span><span class="d">08.04.2026</span><span class="t">Как я включил Claude Code в режим без вопросов</span></a>
+    <a class="clip" href="#"><span class="idx">A.06</span><span class="d">29.03.2026</span><span class="t">Написал скилл для аудита продукта в Claude Code</span></a>
+    <a class="clip" href="#"><span class="pin"></span><span class="idx">A.07</span><span class="d">27.03.2026</span><span class="t">Эту статью написал мой агент по тикету</span><span class="scribble">!!!</span></a>
+    <a class="clip" href="#"><span class="idx">A.08</span><span class="d">19.03.2026</span><span class="t">Software for One: софт, который нужен только тебе</span></a>
+    <a class="clip" href="#"><span class="pin"></span><span class="idx">A.09</span><span class="d">16.03.2026</span><span class="t">Слои контекста: организуем файлы по скорости изменения</span></a>
+    <a class="clip" href="#"><span class="idx">A.10</span><span class="d">14.03.2026</span><span class="t">AGENTS.md: дружим Claude Code с Codex</span></a>
+    <a class="clip" href="#"><span class="pin"></span><span class="idx">A.11</span><span class="d">12.03.2026</span><span class="t">NotebookLM + Claude Code: бесплатный RAG за 5 минут</span></a>
+    <a class="clip" href="#"><span class="idx">A.12</span><span class="d">05.03.2026</span><span class="t">Symphony: демон на Elixir раздаёт задачи Codex</span></a>
+    <a class="clip" href="#"><span class="pin"></span><span class="idx">A.13</span><span class="d">05.03.2026</span><span class="t">Haiku, Sonnet, Opus: какую модель ставить субагенту</span></a>
+    <a class="clip" href="#"><span class="idx">A.14</span><span class="d">04.03.2026</span><span class="t">Как я собрал совет директоров из субагентов</span><span class="scribble">биг босс</span></a>
+  </section>
+
+  <!-- ===== 03 ВИДЕО ===== -->
+  <div class="sec-head" id="youtube">
+    <div class="no">03</div>
+    <div class="title">Видеокассеты · YouTube</div>
+    <div class="scrawl">перемотай на начало!</div>
+  </div>
+  <section class="vhs-grid" aria-label="YouTube">
+    <a class="vhs-featured" href="https://www.youtube.com/watch?v=eguZQ4MAh8U" target="_blank" rel="noopener">
+      <div class="tape tl"></div>
+      <span class="rec">● REC · СВЕЖЕЕ</span>
+      <img src="https://i.ytimg.com/vi/eguZQ4MAh8U/mqdefault.jpg" alt="Claude Fable 5: тесты, бенчмарки и разбор нового AI-релиза Anthropic" loading="lazy">
+      <span class="cap">Claude Fable 5: тесты, бенчмарки и разбор нового AI-релиза Anthropic<small>09.06.2026 · стрим в день релиза</small></span>
+    </a>
+    <div class="vhs-list">
+      <a class="vhs-item" href="https://www.youtube.com/watch?v=05xs_kyacxI" target="_blank" rel="noopener">
+        <img src="https://i.ytimg.com/vi/05xs_kyacxI/mqdefault.jpg" alt="GPT Image 2" loading="lazy">
+        <span><span class="vt">GPT Image 2: разбор новой модели OpenAI</span><span class="vd">21.04.2026</span></span>
+      </a>
+      <a class="vhs-item" href="https://www.youtube.com/watch?v=yX9-bOj1Mu0" target="_blank" rel="noopener">
+        <img src="https://i.ytimg.com/vi/yX9-bOj1Mu0/mqdefault.jpg" alt="Claude Design" loading="lazy">
+        <span><span class="vt">Claude Design: обзор нового AI для дизайна, прототипов и презентаций</span><span class="vd">17.04.2026</span></span>
+      </a>
+      <a class="vhs-item" href="https://www.youtube.com/watch?v=tqDBIhMjo8w" target="_blank" rel="noopener">
+        <img src="https://i.ytimg.com/vi/tqDBIhMjo8w/mqdefault.jpg" alt="Claude Opus 4.7" loading="lazy">
+        <span><span class="vt">Claude Opus 4.7, обзор, вайбкодинг тесты, сравнение с GPT 5.4</span><span class="vd">16.04.2026</span></span>
+      </a>
+    </div>
+  </section>
+
+  <!-- ===== 04 ССЫЛКИ ===== -->
+  <div class="sec-head" id="links">
+    <div class="no">04</div>
+    <div class="title">Явки / пароли · 7 точек входа</div>
+    <div class="scrawl">с холодильника!</div>
+  </div>
+  <section class="links-grid" aria-label="Ссылки">
+    <a class="link-cell" href="https://t.me/ris_ai" target="_blank" rel="noopener">
+      <span class="l-no">04.1</span><h3>рис. AI</h3><p>Телеграм-канал: заметки про агентов, скиллы и вайбкодинг каждый день.</p>
+    </a>
+    <a class="link-cell" href="https://t.me/vibecod3rs" target="_blank" rel="noopener">
+      <span class="l-no">04.2</span><h3>Сообщество Вайбкодеров</h3><p>Чат на 2000+ человек: разборы, релизы, взаимопомощь.</p>
+    </a>
+    <a class="link-cell" href="https://www.youtube.com/@serejaris" target="_blank" rel="noopener">
+      <span class="l-no">04.3</span><h3>YouTube</h3><p>Стримы и разборы релизов — тесты моделей вживую. @serejaris</p>
+    </a>
+    <a class="link-cell" href="https://vibecoding.phd" target="_blank" rel="noopener">
+      <span class="l-no">04.4</span><h3>Кружок Вайбкодинга</h3><p>Практика агентной разработки в малых группах. vibecoding.phd</p>
+    </a>
+    <a class="link-cell" href="https://hsl.sh" target="_blank" rel="noopener">
+      <span class="l-no">04.5</span><h3>HSL — AI-студия</h3><p>Студия агентных систем под задачи бизнеса.</p>
+    </a>
+    <a class="link-cell" href="https://x.com/riiiiiiiiss" target="_blank" rel="noopener">
+      <span class="l-no">04.6</span><h3>Twitter</h3><p>Короткие наблюдения на английском. @riiiiiiiiss</p>
+    </a>
+    <a class="link-cell" href="https://github.com/serejaris" target="_blank" rel="noopener">
+      <span class="l-no">04.7</span><h3>GitHub</h3><p>Публичные эксперименты, включая репо-песочницы стримов. serejaris</p>
+    </a>
+  </section>
+
+  <footer>
+    <div class="f-left">
+      <span class="blot"></span>
+      <span class="sys">Сережа Рис — sereja.tech</span>
+    </div>
+    <div class="f-scrawl">отксерено и посажено на сетку</div>
+    <div class="f-right sys">2026 · Inter&nbsp;Tight + PT&nbsp;Mono · 12 колонок</div>
+  </footer>
+
+</div>
+</body>
+</html>

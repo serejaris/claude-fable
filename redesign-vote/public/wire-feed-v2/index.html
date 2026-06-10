@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>sereja.tech — лента: вайбкодинг, Claude Code, агентные системы</title>
+<meta name="description" content="Сережа Рис — архитектор агентных систем на Claude Code. Новостная лента: статьи, видео, эксперименты.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&family=Inter+Tight:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #f7f5f0;
+    --ink: #17150f;
+    --muted: #76716a;
+    --faint: #b3ada1;
+    --rule: #ddd8cc;
+    --rule-soft: #e7e3d9;
+    --wire-red: #c8102e;
+    --mono: "IBM Plex Mono", "PT Mono", ui-monospace, monospace;
+    --grot: "Inter Tight", "Helvetica Neue", Arial, sans-serif;
+
+    /* единый вертикальный шаг */
+    --baseline: 4px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.5;
+    font-feature-settings: "tnum" 1, "cv02" 1, "ss01" 1;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  a { color: inherit; text-decoration: none; }
+  a:hover { text-decoration: underline; text-underline-offset: 2px; text-decoration-color: var(--wire-red); }
+
+  /* всё, что должно держать колонку — табличные цифры */
+  .tnum { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+
+  /* ── молния ─────────────────────────────── */
+  .breaking {
+    background: var(--wire-red);
+    color: #fff;
+    font-size: 12px;
+    letter-spacing: .03em;
+  }
+  .breaking a {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    max-width: 1060px;
+    margin: 0 auto;
+    padding: 7px 20px;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .breaking .tag {
+    font-weight: 600;
+    flex-shrink: 0;
+    letter-spacing: .08em;
+  }
+  .breaking .tag::before {
+    content: "";
+    display: inline-block;
+    width: 6px; height: 6px;
+    background: #fff;
+    border-radius: 50%;
+    margin-right: 8px;
+    vertical-align: 1px;
+    animation: blink 1.1s steps(2, start) infinite;
+  }
+  @keyframes blink { to { opacity: 0; } }
+  .breaking .txt { overflow: hidden; text-overflow: ellipsis; }
+  .breaking .ts { margin-left: auto; flex-shrink: 0; opacity: .8; font-variant-numeric: tabular-nums; }
+  .breaking a:hover { text-decoration: none; }
+  .breaking a:hover .txt { text-decoration: underline; text-underline-offset: 2px; text-decoration-color: rgba(255,255,255,.7); }
+
+  /* ── шапка ──────────────────────────────── */
+  .wrap { max-width: 1060px; margin: 0 auto; padding: 0 20px; }
+
+  header.masthead {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    flex-wrap: wrap;
+    padding: 16px 0 12px;
+    border-bottom: 2px solid var(--ink);
+  }
+  .masthead .logo {
+    font-family: var(--grot);
+    font-weight: 800;
+    font-size: 21px;
+    letter-spacing: -0.025em;
+  }
+  .masthead .ident {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.4;
+  }
+  .masthead .clock {
+    margin-left: auto;
+    color: var(--muted);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: .02em;
+  }
+
+  /* ── featured ───────────────────────────── */
+  .featured {
+    border-bottom: 1px solid var(--ink);
+    padding: 16px 0 18px;
+  }
+  .featured .kicker {
+    font-size: 11px;
+    letter-spacing: .16em;
+    color: var(--wire-red);
+    font-weight: 600;
+    margin-bottom: 7px;
+  }
+  .featured h1 {
+    font-family: var(--grot);
+    font-weight: 800;
+    font-size: clamp(22px, 4vw, 34px);
+    line-height: 1.1;
+    letter-spacing: -0.018em;
+  }
+  .featured h1 a:hover { text-decoration-thickness: 2px; text-decoration-color: var(--wire-red); }
+  .featured .deck {
+    margin-top: 9px;
+    color: var(--muted);
+    font-size: 12.5px;
+    line-height: 1.55;
+    max-width: 80ch;
+  }
+  .featured .deck b { color: var(--ink); font-weight: 500; }
+
+  /* ── сетка ──────────────────────────────── */
+  .grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: 0 36px;
+  }
+  .col-aside { border-left: 1px solid var(--rule); padding-left: 28px; }
+
+  section { padding: 14px 0 18px; }
+  section + section { border-top: 1px solid var(--rule-soft); }
+  .col-aside section:first-child { padding-top: 14px; }
+
+  .sec-head {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .16em;
+    margin-bottom: 10px;
+    color: var(--ink);
+  }
+  .sec-head::after {
+    content: "";
+    flex: 1;
+    border-bottom: 1px solid var(--rule);
+    transform: translateY(-3px);
+  }
+  .sec-head .count {
+    color: var(--faint);
+    font-weight: 400;
+    letter-spacing: .04em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ── лента статей ───────────────────────── */
+  ol.feed { list-style: none; counter-reset: n; }
+  ol.feed li {
+    counter-increment: n;
+    display: grid;
+    grid-template-columns: 2.5ch 10ch 1fr;
+    align-items: baseline;
+    column-gap: 12px;
+    padding: 4.5px 0;
+    border-bottom: 1px dotted var(--rule);
+    font-size: 13px;
+  }
+  ol.feed li::before {
+    content: counter(n, decimal-leading-zero);
+    color: var(--faint);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+  ol.feed .d {
+    color: var(--muted);
+    font-size: 11.5px;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: .01em;
+    white-space: nowrap;
+  }
+  ol.feed .t { min-width: 0; }
+  ol.feed .t a { font-weight: 500; }
+  ol.feed li.hot::before { color: var(--wire-red); }
+  ol.feed li.hot .t a { font-weight: 600; }
+
+  /* единая система индикаторов */
+  .ind {
+    color: var(--wire-red);
+    font-weight: 600;
+    letter-spacing: .08em;
+    margin-left: 8px;
+    white-space: nowrap;
+  }
+  .ind-new { font-size: 10px; }
+  .ind-new::before { content: "▸ "; font-size: 10px; }
+
+  /* ── видео ──────────────────────────────── */
+  ul.videos { list-style: none; }
+  ul.videos li {
+    padding: 5px 0;
+    border-bottom: 1px dotted var(--rule);
+    display: grid;
+    grid-template-columns: 1.5ch 1fr;
+    column-gap: 9px;
+    align-items: baseline;
+    font-size: 12.5px;
+  }
+  ul.videos li::before {
+    content: "▸";
+    color: var(--wire-red);
+    font-size: 11px;
+    line-height: 1.5;
+  }
+  ul.videos .vt { min-width: 0; }
+  ul.videos .vt > a { line-height: 1.4; display: inline; }
+  ul.videos .vd {
+    display: block;
+    color: var(--muted);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: .01em;
+    margin-top: 2px;
+  }
+  ul.videos li.hot .vt > a { font-weight: 600; }
+
+  /* ── ссылки ─────────────────────────────── */
+  ul.links { list-style: none; }
+  ul.links li {
+    padding: 5px 0;
+    border-bottom: 1px dotted var(--rule);
+    font-size: 12.5px;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+  ul.links li a { font-weight: 500; white-space: nowrap; }
+  ul.links li .note {
+    color: var(--muted);
+    font-size: 11px;
+    margin-left: auto;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: .01em;
+  }
+
+  /* ── футер ──────────────────────────────── */
+  footer {
+    border-top: 2px solid var(--ink);
+    margin-top: 10px;
+    padding: 12px 0 30px;
+    color: var(--muted);
+    font-size: 11.5px;
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+    align-items: baseline;
+  }
+  footer .end {
+    color: var(--faint);
+    margin-left: auto;
+    letter-spacing: .14em;
+  }
+
+  /* ── мобильный ──────────────────────────── */
+  @media (max-width: 760px) {
+    .grid { grid-template-columns: 1fr; }
+    .col-aside {
+      border-left: none;
+      padding-left: 0;
+      border-top: 1px solid var(--rule);
+      margin-top: 4px;
+    }
+    .breaking .ts { display: none; }
+    .masthead .clock { display: none; }
+    ol.feed li { grid-template-columns: 2.5ch 6ch 1fr; }
+    ol.feed .d .yy { display: none; }
+    footer .end { margin-left: 0; width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<div class="breaking">
+  <a href="post.html">
+    <span class="tag">МОЛНИЯ</span>
+    <span class="txt">Anthropic выпустила Claude Fable 5 — новый класс Mythos над Opus. Разбор: цены, effort, кейсы со стрима →</span>
+    <span class="ts">2026-06-10 · 09:41 MSK</span>
+  </a>
+</div>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <span class="logo">sereja.tech</span>
+    <span class="ident">Сережа Рис — архитектор агентных систем на Claude Code · вайбкодинг · лента</span>
+    <span class="clock" id="clock">2026-06-10</span>
+  </header>
+
+  <section class="featured">
+    <div class="kicker">СЕГОДНЯ · ГЛАВНОЕ</div>
+    <h1><a href="post.html">Перешёл на Claude Fable 5: цены, effort, кейсы</a></h1>
+    <p class="deck"><span class="tnum">2026-06-10</span> · Новый класс Mythos, вдвое дороже Opus, но cost per task сходится. Effort-режимы, два прайс-листа, шутер с деплоем за полчаса, агент построил себе пять скиллов и анти-кейс с 32 субагентами. <b><a href="post.html">Читать →</a></b></p>
+  </section>
+
+  <div class="grid">
+
+    <div class="col-main">
+      <section>
+        <div class="sec-head">СТАТЬИ <span class="count">/ 15</span></div>
+        <ol class="feed">
+          <li class="hot"><span class="d"><span class="yy">2026-</span>06-10</span><span class="t"><a href="post.html">Перешёл на Claude Fable 5: цены, effort, кейсы</a><span class="ind ind-new">NEW</span></span></li>
+          <li><span class="d"><span class="yy">2026-</span>04-30</span><span class="t"><a href="#">OTel для Claude Code — рентген твоих скиллов</a></span></li>
+          <li><span class="d"><span class="yy">2026-</span>04-27</span><span class="t"><a href="#">Свой Miro за 30 минут вместо подписки</a></span></li>
+          <li><span class="d"><span class="yy">2026-</span>04-22</span><span class="t"><a href="#">Как трекать задачи агентом в нескольких репо</a></span></li>
+          <li><span class="d"><span class="yy">2026-</span>04-22</span><span class="t"><a href="#">Как я научил Claude Code писать техно-музыку</a></span></li>
+          <li><span class="d"><span class="yy">2026-</span>04-08</span><span class="t"><a href="#">Как я включил Claude Code в режим без вопросов</a></span></li>
+          <li><span class="d"><span class="yy">2026-</span>03-29</span><span class="t"><a href="#">Написал скилл для аудита продукта в Claude Code</a></span></li>
+          <li><span class="d"><span class="yy">2026-</span>03-27</span><span class="t"><a href="#">Эту статью написал мой агент по тикету</a></span></li>
+          <li><span class="d"><span class="yy">2026-</span>03-19</span><span class="t"><a href="#">Software for One: софт, который нужен только тебе</a></span></li>
+          <li><span class="d"><span class="yy">2026-</span>03-16</span><span class="t"><a href="#">Слои контекста: организуем файлы по скорости изменения</a></span></li>
+          <li><span class="d"><span class="yy">2026-</span>03-14</span><span class="t"><a href="#">AGENTS.md: дружим Claude Code с Codex</a></span></li>
+          <li><span class="d"><span class="yy">2026-</span>03-12</span><span class="t"><a href="#">NotebookLM + Claude Code: бесплатный RAG за 5 минут</a></span></li>
+          <li><span class="d"><span class="yy">2026-</span>03-05</span><span class="t"><a href="#">Symphony: демон на Elixir раздаёт задачи Codex</a></span></li>
+          <li><span class="d"><span class="yy">2026-</span>03-05</span><span class="t"><a href="#">Haiku, Sonnet, Opus: какую модель ставить субагенту</a></span></li>
+          <li><span class="d"><span class="yy">2026-</span>03-04</span><span class="t"><a href="#">Как я собрал совет директоров из субагентов</a></span></li>
+        </ol>
+      </section>
+    </div>
+
+    <aside class="col-aside">
+      <section>
+        <div class="sec-head">ВИДЕО <span class="count">/ YT</span></div>
+        <ul class="videos">
+          <li class="hot"><span class="vt"><a href="https://www.youtube.com/watch?v=eguZQ4MAh8U">Claude Fable 5: тесты, бенчмарки и разбор нового AI-релиза Anthropic</a><span class="ind ind-new">NEW</span><span class="vd">2026-06-09</span></span></li>
+          <li><span class="vt"><a href="https://www.youtube.com/watch?v=05xs_kyacxI">GPT Image 2: разбор новой модели OpenAI</a><span class="vd">2026-04-21</span></span></li>
+          <li><span class="vt"><a href="https://www.youtube.com/watch?v=yX9-bOj1Mu0">Claude Design: обзор нового AI для дизайна, прототипов и презентаций</a><span class="vd">2026-04-17</span></span></li>
+          <li><span class="vt"><a href="https://www.youtube.com/watch?v=tqDBIhMjo8w">Claude Opus 4.7, обзор, вайбкодинг тесты, сравнение с GPT 5.4</a><span class="vd">2026-04-16</span></span></li>
+        </ul>
+      </section>
+
+      <section>
+        <div class="sec-head">КАНАЛЫ</div>
+        <ul class="links">
+          <li><a href="https://t.me/ris_ai">рис. AI</a><span class="note">тг-канал</span></li>
+          <li><a href="https://t.me/vibecod3rs">Сообщество Вайбкодеров</a><span class="note">2000+ человек</span></li>
+          <li><a href="https://www.youtube.com/@serejaris">YouTube</a><span class="note">@serejaris</span></li>
+          <li><a href="https://vibecoding.phd">Кружок Вайбкодинга</a><span class="note">vibecoding.phd</span></li>
+          <li><a href="https://hsl.sh">HSL</a><span class="note">AI-студия</span></li>
+          <li><a href="https://x.com/riiiiiiiiss">Twitter</a><span class="note">@riiiiiiiiss</span></li>
+          <li><a href="https://github.com/serejaris">GitHub</a><span class="note">serejaris</span></li>
+        </ul>
+      </section>
+    </aside>
+
+  </div>
+
+  <footer>
+    <span>© 2026 sereja.tech</span>
+    <span>лента обновляется по мере выхода материалов</span>
+    <span class="end">· · · КОНЕЦ ЛЕНТЫ · · ·</span>
+  </footer>
+
+</div>
+
+<script>
+  // живая метка времени в шапке — как у телетайпа
+  (function () {
+    var el = document.getElementById("clock");
+    function tick() {
+      var d = new Date();
+      function p(n) { return n < 10 ? "0" + n : "" + n; }
+      el.textContent = d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate())
+        + " " + p(d.getHours()) + ":" + p(d.getMinutes()) + ":" + p(d.getSeconds());
+    }
+    tick();
+    setInterval(tick, 1000);
+  })();
+</script>
+
+</body>
+</html>

@@ -10,6 +10,8 @@ const PUBLIC_DIR = new URL('./public', import.meta.url).pathname;
 const SLUGS = new Set([
   'terminal', 'broadsheet', 'neon-wire', 'wire-feed', 'magazine',
   'brutalist', 'swiss', 'teletext', 'ticker', 'zine',
+  // round 2
+  'zine-swiss-calm', 'zine-swiss-bold', 'broadsheet-v2', 'wire-feed-v2', 'magazine-v2',
 ]);
 
 const db = new DatabaseSync(DB_PATH);

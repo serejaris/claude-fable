@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Перешёл на Claude Fable 5: цены, effort, кейсы — Сережа Рис</title>
+<meta name="description" content="Anthropic выпустила Claude Fable 5 — новый класс Mythos. Цены, лимиты, effort-режимы и кейсы со стрима в день релиза.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Piazzolla:ital,opsz,wght@0,8..30,400;0,8..30,500;0,8..30,600;0,8..30,700;1,8..30,500;1,8..30,600&family=Golos+Text:wght@400;500;600&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#f4f0e8;
+  --paper-2:#ece6d9;
+  --ink:#211e1a;
+  --ink-soft:#6c655a;
+  --line:#d4ccba;
+  --accent:#b3543b;
+  --accent-soft:#e3cabf;
+  --display:'Piazzolla',serif;
+  --text:'Golos Text',sans-serif;
+  --quote:'Cormorant Garamond',serif;
+  --mono:'JetBrains Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  background:var(--paper);color:var(--ink);
+  font-family:var(--text);font-size:18px;line-height:1.72;
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+}
+img{max-width:100%;display:block}
+a{color:inherit}
+::selection{background:var(--accent-soft);color:var(--ink)}
+p a,li a{text-decoration:underline;text-decoration-thickness:1px;text-decoration-color:var(--accent);text-underline-offset:3px;transition:color .15s}
+p a:hover,li a:hover{color:var(--accent)}
+code{font-family:var(--mono);font-size:.84em;background:var(--paper-2);padding:1px 6px;border-radius:2px}
+
+/* ════════ КОЛОНТИТУЛ ════════ */
+.runhead{
+  position:sticky;top:0;z-index:50;
+  background:var(--paper);
+  display:flex;justify-content:space-between;align-items:center;gap:16px;
+  padding:12px clamp(16px,4vw,48px);
+  font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft);
+  border-bottom:1px solid var(--line);
+}
+.runhead a{text-decoration:none;color:var(--accent);font-weight:500;white-space:nowrap}
+.runhead a:hover{color:var(--ink)}
+.runhead .mid{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.runhead .pg{white-space:nowrap}
+.progress{position:fixed;top:0;left:0;height:2px;background:var(--accent);width:0;z-index:60}
+
+/* ════════ ХИРО ════════ */
+.hero{
+  border-bottom:1px solid var(--line);
+  padding:clamp(40px,6vw,84px) clamp(16px,4vw,64px) clamp(40px,6vw,72px);
+  max-width:1180px;margin:0 auto;
+}
+.hero__rub{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;margin-bottom:26px;font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase}
+.hero__rub .plate{color:var(--accent);font-weight:500}
+.hero__rub .sep{width:1px;height:13px;background:var(--line)}
+.hero__rub .date{color:var(--ink-soft)}
+.hero h1{
+  font-family:var(--display);font-weight:700;
+  font-size:clamp(36px,6.4vw,86px);line-height:1.02;letter-spacing:-.02em;
+  max-width:16ch;
+}
+.hero h1 .it{font-style:italic;font-weight:500;color:var(--accent)}
+.hero__dek{
+  margin-top:30px;max-width:54ch;
+  font-family:var(--quote);font-style:italic;font-weight:500;
+  font-size:clamp(20px,2.4vw,30px);line-height:1.4;color:var(--ink);
+}
+.hero__byline{
+  margin-top:32px;display:flex;flex-wrap:wrap;gap:8px 32px;
+  font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);
+}
+.hero__byline b{color:var(--ink);font-weight:500}
+
+/* ════════ ТЕЛО СТАТЬИ ════════ */
+.article{padding:clamp(40px,5vw,72px) clamp(16px,4vw,40px) 0}
+.article>*{width:min(100%,680px);margin-left:auto;margin-right:auto}
+.article>p{margin-bottom:1.45em}
+.article>.wide{width:min(100%,940px)}
+.article>.bleed{width:min(100%,1100px)}
+
+/* буквица */
+.lede::first-letter{
+  font-family:var(--display);font-weight:700;float:left;
+  font-size:4.6em;line-height:.82;padding:.04em .1em 0 0;
+  color:var(--accent);
+}
+
+/* заголовки разделов */
+.h2{
+  position:relative;margin:2.6em auto 1.1em;
+  font-family:var(--display);font-weight:700;
+  font-size:clamp(26px,3.6vw,44px);line-height:1.06;letter-spacing:-.01em;
+  padding-top:.7em;border-top:1px solid var(--line);
+  display:flex;justify-content:space-between;align-items:baseline;gap:18px;
+}
+.h2 .no{
+  flex:none;font-size:.42em;color:var(--accent);
+  font-weight:500;font-family:var(--mono);letter-spacing:.05em;padding-top:.4em;
+}
+.h3{
+  margin:2.1em auto .8em;
+  font-family:var(--display);font-weight:600;
+  font-size:clamp(19px,2vw,25px);line-height:1.2;
+  display:flex;align-items:baseline;gap:14px;
+}
+.h3::before{content:"";flex:none;width:18px;height:2px;background:var(--accent);transform:translateY(-.35em)}
+
+/* ASCII-схема */
+.ascii{
+  background:var(--ink);color:var(--paper);
+  font-family:var(--mono);font-size:clamp(9px,1.35vw,14px);line-height:1.5;
+  padding:clamp(22px,2.6vw,36px) clamp(16px,2.5vw,32px) clamp(16px,2.5vw,32px);
+  overflow-x:auto;margin:2.2em auto;position:relative;
+}
+.ascii::before{
+  content:"Схема · иерархия моделей Anthropic";
+  display:block;margin-bottom:1.4em;
+  font-size:10.5px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-soft);
+}
+.ascii pre{font-family:inherit}
+.ascii .mh{color:var(--accent-soft)}
+
+/* таблицы цен */
+.pricebox{margin:2.4em auto}
+.pricebox__label{
+  display:block;
+  font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-soft);margin-bottom:12px;
+}
+table{width:100%;border-collapse:collapse;background:transparent}
+th,td{padding:13px 16px;text-align:left;border-bottom:1px solid var(--line);font-size:16px}
+th{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-soft);font-weight:500;border-bottom:1.5px solid var(--ink);
+}
+td:not(:first-child),th:not(:first-child){font-family:var(--mono);text-align:right}
+tbody tr:first-child td{border-top:none}
+tr:last-child td{border-bottom:1.5px solid var(--ink)}
+tr.star td{color:var(--accent);font-weight:600}
+tr.star td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
+td b{font-weight:600}
+
+/* выносная цитата */
+.pull{
+  position:relative;margin:2.8em auto;padding:0 0 0 clamp(20px,4vw,40px);
+  border-left:2px solid var(--accent);
+  font-family:var(--quote);font-style:italic;font-weight:500;
+  font-size:clamp(24px,3.6vw,40px);line-height:1.22;color:var(--ink);
+}
+.pull em{font-style:italic;color:var(--accent)}
+.pull small{
+  display:block;margin-top:1em;
+  font-family:var(--mono);font-style:normal;font-weight:400;
+  font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);
+}
+
+/* промпт-врезка */
+.prompt{
+  position:relative;margin:2.4em auto;
+  border:1px solid var(--ink);background:var(--paper-2);
+}
+.prompt__bar{
+  display:flex;justify-content:space-between;align-items:center;gap:10px;
+  border-bottom:1px solid var(--ink);padding:11px 18px;
+}
+.prompt__no{font-family:var(--display);font-weight:600;font-size:15px}
+.prompt__no i{
+  font-style:normal;font-family:var(--mono);font-weight:500;font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--accent);margin-right:12px;
+}
+.prompt__copy{
+  font-family:var(--mono);font-size:10.5px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;
+  background:transparent;color:var(--ink);border:1px solid var(--ink);cursor:pointer;padding:6px 12px;
+  transition:background .15s,color .15s;flex:none;
+}
+.prompt__copy:hover{background:var(--ink);color:var(--paper)}
+.prompt__body{padding:20px 22px;font-family:var(--mono);font-size:14px;line-height:1.75}
+.prompt__tail{
+  border-top:1px dashed var(--line);padding:9px 18px;
+  font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);
+}
+
+/* НА ПОЛЯХ */
+.margin-note{
+  margin:.4em 0 1.4em 2em;float:right;width:min(280px,44%);
+  background:var(--paper-2);border-top:2px solid var(--accent);
+  padding:18px 20px;font-size:14.5px;line-height:1.55;
+}
+.margin-note .mn-tag{
+  display:block;
+  font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--accent);margin-bottom:10px;
+}
+.margin-note b{font-weight:600}
+
+/* фото с подписями */
+.figure{margin:2.6em auto}
+.figure img{width:100%}
+.figure figcaption{
+  display:flex;gap:14px;align-items:baseline;
+  margin-top:12px;font-size:13.5px;line-height:1.5;color:var(--ink-soft);
+}
+.figure figcaption .fno{
+  flex:none;font-family:var(--mono);font-weight:500;font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--accent);
+}
+.figure figcaption .mono{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;display:block;margin-top:5px}
+
+/* youtube */
+.video{margin:2.6em auto}
+.video .frame{position:relative;aspect-ratio:16/9;background:#000;border:1px solid var(--ink)}
+.video iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.video figcaption{
+  margin-top:16px;font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);
+}
+.video figcaption b{color:var(--accent);font-weight:500}
+
+/* список скиллов */
+.skills{list-style:none;margin:1.9em auto;counter-reset:sk}
+.skills li{
+  counter-increment:sk;position:relative;
+  padding:16px 18px 16px 64px;border-top:1px solid var(--line);
+}
+.skills li:last-child{border-bottom:1px solid var(--line)}
+.skills li::before{
+  content:counter(sk,decimal-leading-zero);
+  position:absolute;left:18px;top:17px;
+  font-family:var(--mono);font-size:13px;color:var(--accent);
+}
+.skills b{font-family:var(--mono);font-weight:500;color:var(--accent)}
+
+/* правила */
+.rule{margin-bottom:1.4em}
+.rule b:first-child{
+  display:inline;color:var(--accent);font-weight:600;margin-right:6px;
+  font-family:var(--display);
+}
+
+/* финал */
+.fin{
+  margin:3.2em auto 0;text-align:center;
+  font-family:var(--mono);font-size:11.5px;letter-spacing:.24em;text-transform:uppercase;color:var(--ink-soft);
+  padding-bottom:.5em;
+}
+.fin::before{content:"—— ◆ ——";display:block;color:var(--accent);letter-spacing:.4em;margin-bottom:16px;font-size:13px}
+
+/* подвал-навигация */
+.endnav{
+  margin-top:clamp(48px,6vw,84px);border-top:1px solid var(--line);
+  background:var(--ink);color:var(--paper);
+  padding:clamp(34px,5vw,60px) clamp(16px,4vw,64px);
+}
+.endnav .inner{
+  max-width:1100px;margin:0 auto;
+  display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:26px;
+}
+.endnav a{
+  font-family:var(--display);font-weight:700;
+  font-size:clamp(22px,3vw,38px);text-decoration:none;line-height:1.1;
+}
+.endnav a span{color:var(--accent-soft)}
+.endnav a:hover span{color:var(--accent)}
+.endnav .colo{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#8d877a;text-align:right;line-height:1.9}
+
+.rv{opacity:0;transform:translateY(16px);transition:opacity .65s ease,transform .65s ease}
+.rv.in{opacity:1;transform:none}
+
+@media(max-width:760px){
+  body{font-size:16.5px}
+  .margin-note{float:none;width:100%;margin:1.4em 0}
+  .runhead .mid{display:none}
+  th,td{padding:10px 10px;font-size:14px}
+  .prompt__body{font-size:13px}
+  .endnav .colo{text-align:left}
+  .h2{flex-direction:column;gap:6px}
+}
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+
+<!-- колонтитул -->
+<nav class="runhead">
+  <a href="index.html">← Сережа Рис</a>
+  <span class="mid">Тема номера · Перешёл на Claude Fable 5</span>
+  <span class="pg">№ 06 / 2026 · с. 01–14</span>
+</nav>
+
+<!-- шапка статьи -->
+<header class="hero">
+  <div class="hero__rub">
+    <span class="plate">Тема номера</span>
+    <span class="sep"></span>
+    <span class="plate">Лонгрид</span>
+    <span class="sep"></span>
+    <span class="date">10 июня 2026</span>
+  </div>
+  <h1>Перешёл на <span class="it">Claude Fable&nbsp;5</span>: цены, effort, кейсы</h1>
+  <p class="hero__dek">Вчера Anthropic выпустила новый класс моделей Mythos — четвёртый в иерархии после Haiku, Sonnet и Opus. Вдвое дороже Opus. Почему отдача с одной задачи всё равно выгоднее — разбор по горячим следам.</p>
+  <div class="hero__byline">
+    <span>Текст: <b>Сережа Рис</b></span>
+    <span>Кейсы: <b>стрим 09.06.2026</b></span>
+    <span>Теги: <b>claude-fable-5 · anthropic · claude-code · вайбкодинг · mythos-5</b></span>
+  </div>
+</header>
+
+<article class="article">
+
+  <p class="lede">Вчера, 9 июня, Anthropic выпустила Claude Fable 5 — новый класс моделей под названием Mythos, четвёртый в иерархии после Haiku, Sonnet и Opus. Для вайбкодера это значит одно: появилась новая рабочая модель, на которую есть смысл пересесть, если задача поставлена чётко. По прайсу вдвое дороже Opus, но отдача с одной задачи выходит выгоднее — и ниже я разберу почему.</p>
+
+  <p>Я провёл стрим прямо в день релиза. Читал пресс-релиз вслух, тыкал Computer Use и поймал отличный анти-кейс с 32 агентами, а агент тем временем собрал четыре проекта — мультиплеер-шутер с деплоем за полчаса, арканоид с управлением рукой, клон Majesty и Chrome-расширение. Всё, о чём пишу дальше — оттуда, со скриншотами и ссылками на работающие игры.</p>
+
+  <figure class="video wide rv">
+    <div class="frame">
+      <iframe src="https://www.youtube-nocookie.com/embed/eguZQ4MAh8U" title="Claude Fable 5: тесты, бенчмарки и разбор нового AI-релиза Anthropic" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe>
+    </div>
+    <figcaption><b>Эфир.</b> Стрим в день релиза: пресс-релиз вслух, четыре проекта, один анти-кейс</figcaption>
+  </figure>
+
+  <p>Все эксперименты стрима — в публичном репозитории <a href="https://github.com/serejaris/claude-fable" target="_blank" rel="noopener">serejaris/claude-fable</a>: каждый проект в своей папке, рядом оригинальный промпт.</p>
+
+  <h2 class="h2 rv">Иерархия и цены<span class="no">/01</span></h2>
+
+  <p>Раньше верхней ступенью был Opus. Теперь над ним появился отдельный класс — Mythos. Выглядит это так:</p>
+
+  <div class="ascii wide rv"><pre>
+   ┌──────────┐   ┌──────────┐   ┌──────────┐   <span class="mh">┌──────────┐</span>
+   │  Haiku   │ → │  Sonnet  │ → │   Opus   │ → <span class="mh">│  Mythos  │</span>
+   │   4.5    │   │   4.6    │   │   4.8    │   <span class="mh">│  (Fable  │</span>
+   │          │   │          │   │          │   <span class="mh">│    5)    │</span>
+   └──────────┘   └──────────┘   └──────────┘   <span class="mh">└──────────┘</span>
+    дешёвый        средний        сильный        <span class="mh">верхний</span>
+    $1/$5          $3/$15         $5/$25         <span class="mh">$10/$50</span></pre></div>
+
+  <p>Сам Claude Fable 5 ездит под API-идентификатором <code>claude-fable-5</code>, доступен через Claude API, AWS Bedrock, Vertex и Foundry с момента релиза. Есть ещё близнец — Claude Mythos 5 (<code>claude-mythos-5</code>), та же модель без части safety-ограничений, по приглашению через программу Project Glasswing. Подробности у самой <a href="https://www.anthropic.com/news/claude-fable-5-mythos-5" target="_blank" rel="noopener">Anthropic в анонсе</a>.</p>
+
+  <aside class="margin-note rv">
+    <span class="mn-tag">На полях · кэш</span>
+    Кэширование промптов: запись на 5 минут — <b>$12.50</b>, на час — <b>$20</b>, попадание в кэш — <b>$1</b> за миллион. Через Batch API всё вдвое дешевле — $5/$25.
+  </aside>
+
+  <p>Цены за миллион токенов (вход/выход):</p>
+
+  <div class="pricebox rv">
+    <span class="pricebox__label">Таблица 1 · Прайс Anthropic, $/млн токенов</span>
+    <table>
+      <thead><tr><th>Модель</th><th>Вход</th><th>Выход</th></tr></thead>
+      <tbody>
+        <tr class="star"><td>Fable 5 / Mythos 5</td><td>$10</td><td>$50</td></tr>
+        <tr><td>Opus 4.8</td><td>$5</td><td>$25</td></tr>
+        <tr><td>Sonnet 4.6</td><td>$3</td><td>$15</td></tr>
+        <tr><td>Haiku 4.5</td><td>$1</td><td>$5</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>И ещё: Fable 5 более чем вдвое дешевле, чем был Mythos Preview ($15/$75). То есть верхний класс не только подняли по способностям, но и заметно удешевили относительно превью.</p>
+
+  <p>Теперь то же самое на фоне конкурентов — флагманы <a href="https://openai.com/api/pricing/" target="_blank" rel="noopener">OpenAI</a> и <a href="https://ai.google.dev/gemini-api/docs/pricing" target="_blank" rel="noopener">Google</a> на момент релиза:</p>
+
+  <div class="pricebox wide rv">
+    <span class="pricebox__label">Таблица 2 · Конкуренты, $/млн токенов</span>
+    <table>
+      <thead><tr><th>Модель</th><th>Вход</th><th>Выход</th></tr></thead>
+      <tbody>
+        <tr><td>GPT-5.5 Pro</td><td>$30</td><td>$180</td></tr>
+        <tr class="star"><td><b>Fable 5</b></td><td><b>$10</b></td><td><b>$50</b></td></tr>
+        <tr><td>GPT-5.5</td><td>$5</td><td>$30</td></tr>
+        <tr><td>Gemini 3.1 Pro</td><td>$2</td><td>$12</td></tr>
+        <tr><td>GPT-5.2</td><td>$1.75</td><td>$14</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>Fable вдвое дороже базового GPT-5.5 и впятеро — Gemini 3.1 Pro. Но это не самая дорогая модель на рынке: GPT-5.5 Pro стоит втрое больше Fable. По позиционированию Fable сидит ровно между «обычным флагманом» и «pro-режимом для особых случаев» — и дальше я покажу, почему cost per task у неё всё равно сходится.</p>
+
+  <p>Контекст — миллион токенов, максимальный выход — 128k против 64k у Sonnet 4.6. Это много, и для длинных задач реально удобно.</p>
+
+  <aside class="margin-note rv">
+    <span class="mn-tag">На полях · токены</span>
+    Начиная с Opus 4.7 — новый токенизатор: тот же текст весит примерно на <b>+30% токенов</b>. Прикидываешь стоимость по старым ощущениям — закладывай поправку.
+  </aside>
+
+  <p>Одна важная деталь, которая ломает интуицию по деньгам. Начиная с Opus 4.7 у моделей новый токенизатор: тот же самый текст теперь весит примерно на 30% больше токенов, чем раньше. Если будете прикидывать стоимость по старым ощущениям — закладывайте поправку. Это напрямую цепляет то, как <a href="#">я строю архитектуру контекста</a>: бюджет токенов на сессию надо пересчитывать.</p>
+
+  <h2 class="h2 rv">Effort-режимы<span class="no">/02</span></h2>
+
+  <p>У Fable 5 пять уровней усилия: max, xhigh, high (по умолчанию), medium и low. Поверх этого работает adaptive thinking — модель сама подкручивает глубину рассуждения, и отключить его нельзя.</p>
+
+  <p>По моим ощущениям рабочий режим — xhigh, а не max. Max сильно дороже, а прироста, который оправдал бы разницу, я на своих задачах не увидел. Так что моя стратегия простая: xhigh как дефолт для серьёзной работы, а вниз по лестнице — на рутину.</p>
+
+  <blockquote class="pull bleed rv">xhigh, а не max: сессии дороже опусовых на 60%, не вдвое — а cost per task выгоднее<small>Effort-режимы · наблюдение со стрима</small></blockquote>
+
+  <p>Любопытно, что в реальной работе разница с Opus меньше прайсовой: на xhigh мои сессии выходили дороже опусовых примерно на 60%, не вдвое. А качество выполнения выше настолько, что cost per task получается выгоднее.</p>
+
+  <h2 class="h2 rv">Бенчмарки, но со скепсисом<span class="no">/03</span></h2>
+
+  <p>Сразу оговорюсь: к само-референсным бенчмаркам я отношусь с прищуром. Вендор на своём же тесте — это маркетинг ровно настолько же, насколько измерение. На стриме я вспоминал Cursor bench: в нём, конечно, лучшая модель — Cursor.</p>
+
+  <p>С этой поправкой — что было в пресс-релизе, который я читал на стриме. На AgentIO Coding в режиме xhigh Fable показала около 30%, тогда как Opus 4.8 — 13.4%, а GPT-5 — 5.7%. На Terminal Bench — порядка 88% против ~83% у Opus 4.8. Computer Use чуть лучше у Mythos Preview: у обычного Fable 5 тут мешают safety guardrails.</p>
+
+  <p>Цифры красивые. Но повторюсь — мой личный фильтр прежний: верю тому, что увидел руками. А руками был стрим.</p>
+
+  <h2 class="h2 rv">Что я делал в день релиза<span class="no">/04</span></h2>
+
+  <h3 class="h3 rv">Оболочка сессии</h3>
+
+  <p>Первым делом я задал агенту рамку всей сессии — чтобы он не свалил всё в кучу и не светил лишнего на экране. Написал Claude Code на Fable 5:</p>
+
+  <div class="prompt rv">
+    <div class="prompt__bar">
+      <span class="prompt__no"><i>Промпт №1</i>Рамка сессии</span>
+      <button class="prompt__copy" data-copy>Копировать</button>
+    </div>
+    <div class="prompt__body" data-prompt>Это папка для тестирования новой модели Fable 5. Любой новый запрос создавай задачу через skill-менеджер, привязывая к этому репозиторию и сохраняя промпт в задаче. Не работай в корне папки — на каждый проект новая папка. Я веду coding-сессию и шарю экран: не показывай токены и пароли в размышлениях — маскируй.</div>
+    <div class="prompt__tail">Оригинал — в репо claude-fable · набран голосом, слегка причёсан</div>
+  </div>
+
+  <p>Дальше каждый эксперимент жил в своей папке, а агент сам заводил задачи под мои запросы.</p>
+
+  <h3 class="h3 rv">Computer Use</h3>
+
+  <p>Сначала потыкал Computer Use. Я попросил агента взять управление Chrome — он зашёл через AppleScript и debug-порт, покликал по странице сам. Рядом агент крутил что-то ещё — я смотрел, как модель удерживает несколько вещей одновременно. Работало бодро; ограничения, которые я заметил, упираются в те самые safety guardrails, а не в способности.</p>
+
+  <h3 class="h3 rv">Шутер за полчаса</h3>
+
+  <p>Главный кейс дня. Я захотел проверить, как Fable тянет фронтенд под нагрузкой, и попросил собрать полноценную онлайн-игру. Написал Claude Code на Fable 5:</p>
+
+  <div class="prompt rv">
+    <div class="prompt__bar">
+      <span class="prompt__no"><i>Промпт №2</i>FPS за 30 минут с деплоем</span>
+      <button class="prompt__copy" data-copy>Копировать</button>
+    </div>
+    <div class="prompt__body" data-prompt>У тебя есть доступ к Railway. Мне нужно, чтобы ты сделал полноценную онлайн 3D FPS (примитивный low-poly стиль) с комнатами, в духе Counter-Strike 1.6. Арена/карта — de_dust. Это происходит во время стрима, у тебя есть 30 минут, за которые ты должен всё реализовать. В конце я должен дать ссылку зайти в игру — к ней смогут подключиться другие люди, которым я дам ссылку, и мы сможем поиграть несколько раундов. Вначале сформулируй план и зафиксируй его в issue, разбей на подзадачи.</div>
+    <div class="prompt__tail">Ни слова про стек — выбор за агентом</div>
+  </div>
+
+  <p>Заметь: в промпте нет ни слова про стек. Агент сам выбрал Node.js + WebSocket на сервере и Three.js на клиенте, зафиксировал план в issue с подзадачами, собрал репозиторий, задеплоил на Railway и выдал публичную ссылку. Зрители стрима подключились по ней и начали бегать по карте — живые тесты прямо в эфире.</p>
+
+  <figure class="figure bleed rv">
+    <img src="/static/images/blog/fable5-dust-arena-ingame.png" alt="Dust Arena — low-poly FPS от первого лица, карта de_dust" loading="lazy">
+    <figcaption><span class="fno">Фото 1</span><span>Dust Arena — low-poly FPS от первого лица, карта de_dust. Зрители стрима бегали по ней в прямом эфире. <span class="mono">Node.js + WebSocket + Three.js · Railway · 30 мин</span></span></figcaption>
+  </figure>
+
+  <p>Игра живёт до сих пор: <a href="https://dust-arena-production.up.railway.app" target="_blank" rel="noopener">dust-arena-production.up.railway.app</a> — можно зайти, кинуть ссылку друзьям и побегать. Код — в <a href="https://github.com/serejaris/claude-fable/tree/main/dust-arena" target="_blank" rel="noopener"><code>dust-arena/</code></a>.</p>
+
+  <p>И тут любопытная вещь, которую я подсмотрел. На этапе вылизывания агент сам развернул двухфазную критику: панель из четырёх агентов — три критика-геймдизайнера, каждый со своей линзой, плюс архитектор карты. Они прочитали реальный код первой версии и выдали <a href="https://github.com/serejaris/claude-fable/blob/main/dust-arena/design-review.md" target="_blank" rel="noopener">18 находок</a> — от сломанного восстановления разброса до случайной отдачи, которую нельзя выучить. Вторая фаза — фиксы, и так появилась v2. Это ровно тот паттерн, про который я писал в <a href="#">статье про agent teams</a> — только тут Fable собрал его без моей подсказки.</p>
+
+  <p>Рядом — отдельный мини-эксперимент <a href="https://github.com/serejaris/claude-fable/tree/main/de-dust-boxes" target="_blank" rel="noopener"><code>de-dust-boxes</code></a>: Fable в роли level designer. Карта de_dust описана как JSON из axis-aligned боксов — три лейна, чоки, лестницы, ящики, — а рядом скрипт-валидатор, который проверяет геометрию: ширину коридоров, отсутствие сквозных сайтлайнов, доступность плато.</p>
+
+  <p>По части фронтенда впечатление однозначное: Fable классно делает фронт. GPT так не умеет — у него выходит суше и кривее. Это уже моё наблюдение, не бенчмарк.</p>
+
+  <h3 class="h3 rv">Арканоид из чата claude.ai</h3>
+
+  <p>У меня в claude.ai лежал артефакт — 3D-арканоид, где экран работает как окно в туннель: перспектива едет за головой через вебкамеру (off-axis projection), а ракетку двигаешь рукой перед камерой через MediaPipe. Артефакт был сломан, а публичного API у артефактов нет — достать код по ссылке просто так нельзя. Написал Claude Code на Fable 5:</p>
+
+  <div class="prompt rv">
+    <div class="prompt__bar">
+      <span class="prompt__no"><i>Промпт №3</i>Починить артефакт из claude.ai</span>
+      <button class="prompt__copy" data-copy>Копировать</button>
+    </div>
+    <div class="prompt__body" data-prompt>Вот ссылка на чат в claude.ai — в этом артефакте была ошибка. Получи код, почини ошибку, захости на Vercel на публичной ссылке.</div>
+    <div class="prompt__tail">Публичного API у артефактов нет — агент нашёл обходной путь сам</div>
+  </div>
+
+  <p>Агент сам разобрался, как вытащить артефакт из чата без API, починил и задеплоил: <a href="https://arkanoid-tunnel.vercel.app" target="_blank" rel="noopener">arkanoid-tunnel.vercel.app</a> — лучше всего в фуллскрине и с камерой. Код — в <a href="https://github.com/serejaris/claude-fable/tree/main/arkanoid-hands-fix" target="_blank" rel="noopener"><code>arkanoid-hands-fix/</code></a>.</p>
+
+  <figure class="figure wide rv">
+    <img src="/static/images/blog/fable5-arkanoid-ingame.png" alt="Арканоид-тоннель — off-axis projection, ракетка следует за рукой" loading="lazy">
+    <figcaption><span class="fno">Фото 2</span><span>Арканоид-тоннель: экран как окно в туннель, off-axis projection, ракетка следует за рукой. <span class="mono">MediaPipe + Webcam · Vercel</span></span></figcaption>
+  </figure>
+
+  <p>А способ доставать артефакты агент тут же оформил в отдельный скилл — об этом ниже.</p>
+
+  <h3 class="h3 rv">Клон Majesty</h3>
+
+  <p>Под конец стрима — задача потяжелее: клон моей любимой Majesty, стратегии с indirect control. Ты не командуешь юнитами — строишь гильдии, вешаешь флаги-награды и смотришь, как герои сами решают, идти ли умирать за твои 20 золотых. Написал Claude Code на Fable 5:</p>
+
+  <div class="prompt rv">
+    <div class="prompt__bar">
+      <span class="prompt__no"><i>Промпт №4</i>Клон Majesty</span>
+      <button class="prompt__copy" data-copy>Копировать</button>
+    </div>
+    <div class="prompt__body" data-prompt>Я хочу сделать клон моей любимой игры Majesty, где indirect control. Симуляция королевства: можно строить постройки, нанимать воинов. Каждый герой — персонаж с классом (маг, воин, лучник), опытом, здоровьем и персональностью: трусливость, рвение и так далее. Сделай issue, запланируй, разбей на задачи, используй workflow. В начале проведи research по лучшим практикам создания игр и зафиксируй результаты. По итогу сделай несколько скиллов, которые сам посчитаешь необходимыми — например, game designer. В конце опубликуй на Railway.</div>
+    <div class="prompt__tail">«Сделай скиллы, которые сам посчитаешь необходимыми» — ключевая строчка дня</div>
+  </div>
+
+  <p>Агент провёл research, написал GDD — game design document — до первой строчки кода, разбил работу на задачи и собрал симуляцию: герои с utility-AI выбирают, что делать, исходя из характера, экономика крутится через налоги с лавок и гильдейскую десятину. Звуки — 18 эффектов, сгенерированных через ElevenLabs и привязанных к событиям игры.</p>
+
+  <figure class="figure bleed rv">
+    <img src="/static/images/blog/fable5-majesty-clone.png" alt="Majesty Clone — дворец, панель построек и флаги-указы" loading="lazy">
+    <figcaption><span class="fno">Фото 3</span><span>Majesty Clone — дворец, панель построек и флаги-указы. Герои с utility-AI сами решают, идти ли умирать за твои 20 золотых. <span class="mono">GDD до первой строчки кода · 18 SFX через ElevenLabs · Railway</span></span></figcaption>
+  </figure>
+
+  <p>Поиграть: <a href="https://majesty-clone-production.up.railway.app" target="_blank" rel="noopener">majesty-clone-production.up.railway.app</a>. Код и GDD — в <a href="https://github.com/serejaris/claude-fable/tree/main/majesty-clone" target="_blank" rel="noopener"><code>majesty-clone/</code></a>.</p>
+
+  <h3 class="h3 rv">Fable Countdown</h3>
+
+  <p>Между играми родился проект про саму модель. Fable 5 через какое-то время выйдет из подписки — окно ограничено, и мне захотелось это окно видеть. Написал Claude Code на Fable 5:</p>
+
+  <div class="prompt rv">
+    <div class="prompt__bar">
+      <span class="prompt__no"><i>Промпт №5</i>Chrome-плагин с отсчётом</span>
+      <button class="prompt__copy" data-copy>Копировать</button>
+    </div>
+    <div class="prompt__body" data-prompt>Сделай обратный отсчёт до 22 июня, сделай его классным. Контекст: вышла модель Fable от Anthropic, она клёвая, мне очень понравилась. Я понимаю, что через какое-то время она выйдет из подписки, и у меня есть ограниченное время, чтобы использовать её по максимуму. Это будет плагин для Chrome, который заменяет стартовую страницу. Передай всю эту историю и боль. В общем, давай впечатли.</div>
+    <div class="prompt__tail">«Передай всю эту историю и боль» — и агент передал</div>
+  </div>
+
+  <p>Получилось Chrome-расширение в духе memento mori: каждая новая вкладка — счётчик дней до полуночи 22 июня, дня, когда Fable уходит из подписки; сетка углей, где одна точка — один час с моделью, и лимиты подписки в углу — 5-часовое окно сессии и недельное, с подсветкой при приближении к порогу. Код — в <a href="https://github.com/serejaris/claude-fable/tree/main/fable-countdown" target="_blank" rel="noopener"><code>fable-countdown/</code></a>.</p>
+
+  <figure class="figure wide rv">
+    <img src="/static/images/blog/fable5-countdown.jpg" alt="Fable Countdown — новая вкладка Chrome с обратным отсчётом" loading="lazy">
+    <figcaption><span class="fno">Фото 4</span><span>Fable Countdown — memento mori на каждой новой вкладке: одна точка-уголёк = один час с моделью. <span class="mono">Chrome Extension · New Tab Override</span></span></figcaption>
+  </figure>
+
+  <h3 class="h3 rv">Агент построил себе пять скиллов</h3>
+
+  <p>Самый сильный сюжет дня — не игры, а то, что модель строила себе инструменты, а не только код. За сессию агент создал пять скиллов — сам, под задачи, которые перед ним вставали:</p>
+
+  <ol class="skills wide rv">
+    <li><b>game-designer</b> — проектирует механику до написания кода;</li>
+    <li><b>game-balance</b> — тюнит баланс: почему герой умирает слишком быстро, почему экономика голодает;</li>
+    <li><b>playtest-qa</b> — проверяет, что фича работает, перед коммитом и деплоем;</li>
+    <li><b>extracting-claude-chat-artifacts</b> — достаёт и чинит артефакт из чата claude.ai по ссылке — родился из задачи с арканоидом;</li>
+    <li><b>posting-fable-reports</b> — «микроотчёт нейрочела»: Fable от первого лица отчитывается о сделанном в чат вайбкодеров и сам отправляет сообщение через userbot. <a href="https://t.me/vibecod3rs/77447" target="_blank" rel="noopener">Реальный пример уже в чате</a>.</li>
+  </ol>
+
+  <p>Первые три появились из промпта про Majesty — я попросил «сделай скиллы, которые сам посчитаешь необходимыми», и агент решил, что ему нужны геймдизайнер, балансировщик и QA. Последние два он собрал по ходу: упёрся в отсутствие API у артефактов — сделал инструмент; понадобилось отчитаться в чат — сделал инструмент. Это другой режим работы: не «модель пишет код», а «модель расширяет саму себя под задачу».</p>
+
+  <blockquote class="pull bleed rv">Не «модель пишет код», а «модель <em>расширяет саму себя</em> под задачу»<small>Пять скиллов за одну сессию · 09.06.2026</small></blockquote>
+
+  <h3 class="h3 rv">32 агента — анти-кейс</h3>
+
+  <p>А вот где я споткнулся. Я кинул задачу расплывчато, без чёткой формулировки результата. Агент решил, что справится массой: разогнался до 32 субагентов, потом до 64. Толку — ноль, только жжёт ресурсы и расползается в стороны. Пришлось остановить.</p>
+
+  <p>Урок ровно тот же, что я повторяю себе постоянно: сильная модель не лечит размытую задачу. Чем мощнее агент, тем больнее он умножает плохую постановку. Когда задача нечёткая, fan-out из десятков агентов — это не ускорение, а способ красиво сжечь токены.</p>
+
+  <blockquote class="pull bleed rv">Сильная модель не лечит размытую задачу. Чем мощнее агент, тем больнее он умножает плохую постановку<small>Анти-кейс · 32 агента, потом 64, толку — ноль</small></blockquote>
+
+  <p>Когда задачи надо было нарезать аккуратно, я диктовал агенту голосом, а он сам раскладывал поток на части. Написал Claude Code на Fable 5:</p>
+
+  <div class="prompt rv">
+    <div class="prompt__bar">
+      <span class="prompt__no"><i>Промпт №6</i>Декомпозиция голосом</span>
+      <button class="prompt__copy" data-copy>Копировать</button>
+    </div>
+    <div class="prompt__body" data-prompt>Распарси мой поток речи, декомпозируй в задачи, зафиксируй с нужным лейблом в нужных репозиториях.</div>
+    <div class="prompt__tail">Одна строка — и поток речи разложен по репозиториям</div>
+  </div>
+
+  <h2 class="h2 rv">Как пользоваться с умом<span class="no">/05</span></h2>
+
+  <p>Собрал из дня релиза несколько правил для себя.</p>
+
+  <p class="rule"><b>xhigh, не max.</b> Дефолт для рабочих задач — xhigh. Max берегу для редких случаев, где реально упёрся; на моих задачах разница не окупалась.</p>
+
+  <p class="rule"><b>Чёткая задача до fan-out.</b> Кейс с 32 агентами — главный урок. Сначала формулировка результата, потом разгон агентов. Не наоборот.</p>
+
+  <p class="rule"><b>Fable — оркестратор, рутина — на дешёвые модели.</b> Незачем гонять весь стек на $10/$50. Логично держать Fable наверху как дирижёра, а рутину спускать на Haiku и Sonnet — про эту экономику субагентов я уже <a href="#">подробно расписывал</a>. Заодно это вписывается в общую <a href="#">экономику инструментов 2026</a>.</p>
+
+  <p class="rule"><b>Промпт-оболочка на старте.</b> Первая моя реплика в сессии — рамка, а не задача: где работать, как фиксировать, что не светить на экране. Дальше агент держит дисциплину сам.</p>
+
+  <p class="rule"><b>Помни про safety-редирект.</b> Меньше 5% сессий Fable молча перекидывает на Opus 4.8 без доплаты — это кибербезопасность, био/химия, дистилляция. Если у тебя такая тема, держи в голове, что фактически отвечает другая модель.</p>
+
+  <p class="rule"><b>Закладывай +30% токенов.</b> Новый токенизатор раздувает счётчик. В оценках стоимости это надо учитывать сразу, иначе бюджет уедет.</p>
+
+  <aside class="margin-note rv">
+    <span class="mn-tag">Под капотом</span>
+    Для шутера агент использовал <b>Railway</b> для деплоя. Захочешь повторить, а его нет — просто скажи агенту поставить и подключить. Это его забота, не твоя.
+  </aside>
+
+  <p>Под капотом для шутера агент использовал Railway для деплоя — если ты захочешь повторить, а у тебя его нет, просто скажи агенту поставить и подключить. Это его забота, не твоя.</p>
+
+  <h2 class="h2 rv">Вывод<span class="no">/06</span></h2>
+
+  <p>Claude Fable 5 — новая рабочая модель для вайбкодера, и я на неё перехожу. Но главный вывод дня не про модель.</p>
+
+  <p>Качество инструмента умножается на качество задачи. Дай Fable чёткую постановку — получишь шутер с деплоем за полчаса. Дай размытую — получишь 64 агента, которые крутятся вхолостую. Модель стала сильнее. Цена ошибки в постановке — тоже.</p>
+
+  <blockquote class="pull bleed rv">Качество инструмента <em>умножается</em> на качество задачи<small>Вывод номера</small></blockquote>
+
+  <p class="fin">Конец материала · Сережа Рис · № 06 / 2026</p>
+
+</article>
+
+<nav class="endnav">
+  <div class="inner">
+    <a href="index.html"><span>←</span> Назад к обложке</a>
+    <div class="colo">
+      Тема номера · с. 01–14<br>
+      эксперименты: github.com/serejaris/claude-fable<br>
+      sereja.tech · 2026
+    </div>
+  </div>
+</nav>
+
+<script>
+// прогресс чтения
+const bar=document.getElementById('progress');
+addEventListener('scroll',()=>{
+  const h=document.documentElement;
+  bar.style.width=(h.scrollTop/(h.scrollHeight-h.clientHeight)*100)+'%';
+},{passive:true});
+
+// появление блоков
+const io=new IntersectionObserver(es=>{
+  es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}});
+},{threshold:.1});
+document.querySelectorAll('.rv').forEach(el=>io.observe(el));
+
+// копирование промптов
+document.querySelectorAll('[data-copy]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const text=btn.closest('.prompt').querySelector('[data-prompt]').textContent.trim();
+    navigator.clipboard.writeText(text).then(()=>{
+      const old=btn.textContent;btn.textContent='Скопировано ✓';
+      setTimeout(()=>btn.textContent=old,1600);
+    });
+  });
+});
+</script>
+</body>
+</html>

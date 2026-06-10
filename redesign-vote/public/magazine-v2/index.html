@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>СЕРЕЖА РИС — журнал про вайбкодинг</title>
+<meta name="description" content="Персональный журнал про вайбкодинг, Claude Code и агентные системы.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Piazzolla:ital,opsz,wght@0,8..30,400;0,8..30,600;0,8..30,700;1,8..30,500&family=Golos+Text:wght@400;500;600&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#f4f0e8;
+  --paper-2:#ece6d9;
+  --ink:#211e1a;
+  --ink-soft:#6c655a;
+  --line:#d4ccba;
+  --accent:#b3543b;          /* приглушённый терракот — единственный акцент */
+  --accent-soft:#e3cabf;
+  --display:'Piazzolla',serif;
+  --text:'Golos Text',sans-serif;
+  --quote:'Cormorant Garamond',serif;
+  --mono:'JetBrains Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--text);
+  font-size:17px;
+  line-height:1.62;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+a{color:inherit}
+img{max-width:100%;display:block}
+::selection{background:var(--accent-soft);color:var(--ink)}
+
+.wrap{max-width:1180px;margin:0 auto;padding:0 clamp(20px,5vw,64px)}
+
+/* ════════ ШАПКА-ОБЛОЖКА ════════ */
+.masthead{padding-top:clamp(32px,5vw,72px)}
+.masthead__meta{
+  display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:10px 24px;
+  font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft);
+  padding-bottom:16px;border-bottom:1px solid var(--line);
+}
+.masthead__meta .lead{color:var(--accent)}
+.masthead h1{
+  font-family:var(--display);font-weight:700;
+  font-size:clamp(52px,11.5vw,148px);
+  line-height:.96;letter-spacing:-.02em;
+  margin:clamp(28px,4vw,52px) 0 0;
+}
+.masthead h1 .ris{font-style:italic;font-weight:500;color:var(--accent)}
+.masthead__strap{
+  display:grid;grid-template-columns:1fr;gap:18px;
+  padding:clamp(22px,3vw,34px) 0 clamp(30px,4vw,48px);
+  border-bottom:1px solid var(--line);
+}
+.masthead__role{
+  font-family:var(--quote);font-style:italic;font-weight:500;
+  font-size:clamp(21px,2.6vw,32px);line-height:1.36;max-width:34ch;color:var(--ink);
+}
+.masthead__role em{font-style:italic;color:var(--accent)}
+
+/* ════════ FEATURED РАЗВОРОТ ════════ */
+.spread{
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  gap:clamp(28px,4vw,56px);align-items:center;
+  padding:clamp(40px,6vw,80px) 0;
+  border-bottom:1px solid var(--line);
+}
+.spread__body{display:flex;flex-direction:column}
+.spread__rubric{
+  display:flex;align-items:center;gap:14px;margin-bottom:22px;
+  font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;
+}
+.spread__rubric .plate{color:var(--accent);font-weight:500}
+.spread__rubric .date{color:var(--ink-soft)}
+.spread__rubric .sep{width:1px;height:13px;background:var(--line)}
+.spread__title{
+  font-family:var(--display);font-weight:700;
+  font-size:clamp(30px,4.6vw,58px);line-height:1.04;letter-spacing:-.015em;
+}
+.spread__title a{text-decoration:none}
+.spread__title .it{font-style:italic;font-weight:500;color:var(--accent)}
+.spread__dek{
+  margin-top:24px;max-width:46ch;font-size:16px;line-height:1.62;color:var(--ink-soft);
+}
+.spread__cta{
+  margin-top:30px;display:inline-flex;align-self:flex-start;align-items:center;gap:12px;
+  font-family:var(--mono);font-size:12.5px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--paper);background:var(--accent);text-decoration:none;
+  padding:13px 24px;transition:background .2s;
+}
+.spread__cta:hover{background:var(--ink)}
+.spread__tags{
+  margin-top:26px;display:flex;flex-wrap:wrap;gap:8px 18px;
+  font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);
+}
+.spread__img figure{margin:0}
+.spread__img img{width:100%;aspect-ratio:4/3;object-fit:cover}
+.spread__img figcaption{
+  margin-top:12px;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--ink-soft);line-height:1.5;
+}
+
+/* ════════ РУБРИКИ ════════ */
+.section{padding:clamp(48px,7vw,96px) 0;border-bottom:1px solid var(--line)}
+.section__head{
+  display:grid;grid-template-columns:auto 1fr;align-items:baseline;gap:clamp(20px,3vw,40px);
+  margin-bottom:clamp(36px,5vw,60px);
+}
+.section__num{
+  font-family:var(--display);font-weight:600;
+  font-size:clamp(34px,5vw,64px);line-height:1;color:var(--accent-soft);
+}
+.section--tv .section__num{color:#5a554c}
+.section__titlewrap{display:flex;flex-direction:column;gap:8px}
+.section__kicker{
+  font-family:var(--mono);font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--accent);
+}
+.section--tv .section__kicker{color:var(--accent-soft)}
+.section__title{
+  font-family:var(--display);font-weight:700;
+  font-size:clamp(30px,4.4vw,54px);line-height:1;letter-spacing:-.01em;
+}
+
+/* ── архив статей ── */
+.archive{display:grid;grid-template-columns:minmax(0,4fr) minmax(0,8fr);gap:clamp(28px,4vw,56px)}
+.archive__lead{
+  font-family:var(--quote);font-style:italic;font-weight:500;
+  font-size:clamp(20px,2.2vw,27px);line-height:1.38;color:var(--ink);
+}
+.archive__lead .mk{color:var(--accent)}
+.archive__list{list-style:none;counter-reset:art}
+.archive__list li{counter-increment:art}
+.art{
+  display:grid;grid-template-columns:38px 104px 1fr;gap:8px 20px;align-items:baseline;
+  padding:17px 0;border-top:1px solid var(--line);
+  text-decoration:none;transition:opacity .15s;
+}
+.archive__list li:last-child .art{border-bottom:1px solid var(--line)}
+.art::before{
+  content:counter(art,decimal-leading-zero);
+  font-family:var(--mono);font-size:12px;color:var(--accent);padding-top:.25em;
+}
+.art__date{font-family:var(--mono);font-size:12px;letter-spacing:.04em;color:var(--ink-soft)}
+.art__title{
+  font-family:var(--text);font-weight:500;font-size:clamp(16px,1.5vw,19px);line-height:1.34;
+}
+.art:hover .art__title{color:var(--accent)}
+.art--big .art__title{font-family:var(--display);font-weight:600;font-size:clamp(18px,1.9vw,24px);line-height:1.18}
+
+/* ── youtube ── */
+.section--tv{background:var(--ink);color:var(--paper)}
+.section--tv .section__title{color:var(--paper)}
+.tv{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:clamp(28px,3.5vw,52px);align-items:start}
+.tv__frame{position:relative;aspect-ratio:16/9;background:#000;border:1px solid #3a352d}
+.tv__frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.tv__cap{margin-top:22px;display:flex;gap:16px;align-items:baseline}
+.tv__cap .onair{
+  flex:none;font-family:var(--mono);font-size:11px;font-weight:500;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--accent-soft);padding-top:.18em;
+}
+.tv__cap h3{font-family:var(--display);font-weight:600;font-size:clamp(17px,1.7vw,22px);line-height:1.24}
+.tv__cap .d{font-family:var(--mono);font-size:11px;color:#8d877a;letter-spacing:.08em;display:block;margin-top:7px}
+.tv__list{list-style:none}
+.tv__item{
+  display:grid;grid-template-columns:120px 1fr;gap:16px;align-items:center;
+  padding:16px 0;border-top:1px solid #3a352d;text-decoration:none;transition:opacity .15s;
+}
+.tv__list li:first-child .tv__item{border-top:none;padding-top:0}
+.tv__item:hover h4{color:var(--accent-soft)}
+.tv__item img{width:120px;aspect-ratio:16/9;object-fit:cover}
+.tv__item h4{font-family:var(--text);font-weight:500;font-size:14.5px;line-height:1.38;transition:color .15s}
+.tv__item .d{font-family:var(--mono);font-size:11px;color:#8d877a;letter-spacing:.08em;display:block;margin-top:6px}
+.tv__more{
+  margin-top:24px;display:inline-block;font-family:var(--mono);font-size:12px;font-weight:500;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--accent-soft);text-decoration:none;
+  border-bottom:1px solid var(--accent-soft);padding-bottom:3px;transition:color .15s,border-color .15s;
+}
+.tv__more:hover{color:var(--paper);border-color:var(--paper)}
+
+/* ── ссылки ── */
+.links{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:1px;background:var(--line);border:1px solid var(--line)}
+.lk{
+  background:var(--paper);padding:26px 24px 22px;text-decoration:none;position:relative;
+  display:flex;flex-direction:column;gap:9px;min-height:158px;transition:background .18s;
+}
+.lk:hover{background:var(--paper-2)}
+.lk--accent{background:var(--accent);color:var(--paper)}
+.lk--accent:hover{background:#9d4732}
+.lk__tag{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;opacity:.7}
+.lk__name{font-family:var(--display);font-weight:600;font-size:clamp(19px,1.9vw,24px);line-height:1.08}
+.lk__desc{font-size:13.5px;line-height:1.5;opacity:.82;margin-top:2px}
+.lk__arrow{position:absolute;right:20px;top:24px;font-family:var(--mono);font-size:15px;opacity:.6}
+
+/* ════════ ПОДВАЛ ════════ */
+footer{background:var(--ink);color:var(--paper);padding:clamp(40px,5vw,64px) 0}
+footer .inner{
+  max-width:1180px;margin:0 auto;padding:0 clamp(20px,5vw,64px);
+  display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:28px;
+}
+footer .colo{font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;line-height:1.9;color:#8d877a}
+footer .colo b{color:var(--accent-soft);font-weight:500}
+footer .price{font-family:var(--display);font-style:italic;font-weight:500;font-size:clamp(24px,3vw,36px);color:var(--paper);line-height:1}
+footer .price em{font-style:italic;color:var(--accent-soft)}
+
+/* появление при скролле */
+.rv{opacity:0;transform:translateY(18px);transition:opacity .7s ease,transform .7s ease}
+.rv.in{opacity:1;transform:none}
+
+/* ════════ МОБИЛЬНОЕ ════════ */
+@media(max-width:880px){
+  .spread{grid-template-columns:1fr;gap:32px}
+  .spread__img{order:-1}
+  .archive{grid-template-columns:1fr;gap:28px}
+  .tv{grid-template-columns:1fr}
+  .section__head{grid-template-columns:1fr;gap:12px}
+}
+@media(max-width:560px){
+  .art{grid-template-columns:28px 1fr;grid-template-rows:auto auto}
+  .art__date{grid-column:2}
+  .art__title{grid-column:1/3}
+}
+</style>
+</head>
+<body>
+
+<!-- обложка -->
+<div class="wrap">
+<header class="masthead">
+  <div class="masthead__meta">
+    <span class="lead">Журнал одного автора</span>
+    <span>№ 06 / июнь 2026</span>
+    <span>sereja.tech</span>
+    <span>вайбкодинг · claude code · агенты</span>
+  </div>
+  <h1>Сережа <span class="ris">Рис</span></h1>
+  <div class="masthead__strap">
+    <p class="masthead__role">Архитектор агентных систем на Claude Code. Не пишет код руками — <em>направляет агентов</em> промптами. Канал, YouTube и сообщество вайбкодеров.</p>
+  </div>
+</header>
+
+<!-- featured-разворот -->
+<section class="spread">
+  <div class="spread__body">
+    <div class="spread__rubric">
+      <span class="plate">Тема номера</span>
+      <span class="sep"></span>
+      <span class="date">10.06.2026 · лонгрид</span>
+    </div>
+    <h2 class="spread__title">
+      <a href="post.html">Перешёл на <span class="it">Claude Fable&nbsp;5</span>: цены, effort, кейсы</a>
+    </h2>
+    <p class="spread__dek">Anthropic выпустила новый класс моделей Mythos — четвёртый в иерархии. Вдвое дороже Opus, но cost per task сходится. Стрим в день релиза: шутер с деплоем за полчаса, арканоид с управлением рукой, клон Majesty и анти-кейс с 32 агентами.</p>
+    <a class="spread__cta" href="post.html">Читать разворот →</a>
+    <div class="spread__tags">
+      <span>#claude-fable-5</span><span>#anthropic</span><span>#claude-code</span><span>#вайбкодинг</span>
+    </div>
+  </div>
+  <div class="spread__img">
+    <figure>
+      <img src="/static/images/blog/fable5-dust-arena-ingame.png" alt="Dust Arena — low-poly FPS, собранный агентом на Claude Fable 5">
+      <figcaption>Снимок экрана · стрим 09.06.2026 · Dust Arena, собран агентом за 30 минут</figcaption>
+    </figure>
+  </div>
+</section>
+</div>
+
+<!-- 01 · архив -->
+<section class="section">
+  <div class="wrap">
+    <div class="section__head">
+      <span class="section__num" aria-hidden="true">01</span>
+      <div class="section__titlewrap">
+        <span class="section__kicker">Рубрика 01 / Архив</span>
+        <h2 class="section__title">Статьи</h2>
+      </div>
+    </div>
+    <div class="archive">
+      <p class="archive__lead rv">Каждая статья — <span class="mk">реальный рабочий кейс</span>: что попросил у агента, что получилось, сколько стоило. Никакой теории без прогона руками.</p>
+      <ul class="archive__list">
+        <li><a class="art art--big rv" href="#"><span class="art__date">30.04.2026</span><span class="art__title">OTel для Claude Code — рентген твоих скиллов</span></a></li>
+        <li><a class="art art--big rv" href="#"><span class="art__date">27.04.2026</span><span class="art__title">Свой Miro за 30 минут вместо подписки</span></a></li>
+        <li><a class="art rv" href="#"><span class="art__date">22.04.2026</span><span class="art__title">Как трекать задачи агентом в нескольких репо</span></a></li>
+        <li><a class="art rv" href="#"><span class="art__date">22.04.2026</span><span class="art__title">Как я научил Claude Code писать техно-музыку</span></a></li>
+        <li><a class="art rv" href="#"><span class="art__date">08.04.2026</span><span class="art__title">Как я включил Claude Code в режим без вопросов</span></a></li>
+        <li><a class="art rv" href="#"><span class="art__date">29.03.2026</span><span class="art__title">Написал скилл для аудита продукта в Claude Code</span></a></li>
+        <li><a class="art rv" href="#"><span class="art__date">27.03.2026</span><span class="art__title">Эту статью написал мой агент по тикету</span></a></li>
+        <li><a class="art rv" href="#"><span class="art__date">19.03.2026</span><span class="art__title">Software for One: софт, который нужен только тебе</span></a></li>
+        <li><a class="art rv" href="#"><span class="art__date">16.03.2026</span><span class="art__title">Слои контекста: организуем файлы по скорости изменения</span></a></li>
+        <li><a class="art rv" href="#"><span class="art__date">14.03.2026</span><span class="art__title">AGENTS.md: дружим Claude Code с Codex</span></a></li>
+        <li><a class="art rv" href="#"><span class="art__date">12.03.2026</span><span class="art__title">NotebookLM + Claude Code: бесплатный RAG за 5 минут</span></a></li>
+        <li><a class="art rv" href="#"><span class="art__date">05.03.2026</span><span class="art__title">Symphony: демон на Elixir раздаёт задачи Codex</span></a></li>
+        <li><a class="art rv" href="#"><span class="art__date">05.03.2026</span><span class="art__title">Haiku, Sonnet, Opus: какую модель ставить субагенту</span></a></li>
+        <li><a class="art rv" href="#"><span class="art__date">04.03.2026</span><span class="art__title">Как я собрал совет директоров из субагентов</span></a></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 02 · youtube -->
+<section class="section section--tv">
+  <div class="wrap">
+    <div class="section__head">
+      <span class="section__num" aria-hidden="true">02</span>
+      <div class="section__titlewrap">
+        <span class="section__kicker">Рубрика 02 / Эфир</span>
+        <h2 class="section__title">YouTube</h2>
+      </div>
+    </div>
+    <div class="tv">
+      <div class="tv__featured rv">
+        <div class="tv__frame">
+          <iframe src="https://www.youtube-nocookie.com/embed/eguZQ4MAh8U" title="Claude Fable 5: тесты, бенчмарки и разбор нового AI-релиза Anthropic" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe>
+        </div>
+        <div class="tv__cap">
+          <span class="onair">Последнее видео</span>
+          <div>
+            <h3>Claude Fable 5: тесты, бенчмарки и разбор нового AI-релиза Anthropic</h3>
+            <span class="d">09.06.2026 · стрим в день релиза</span>
+          </div>
+        </div>
+      </div>
+      <div>
+        <ul class="tv__list">
+          <li>
+            <a class="tv__item rv" href="https://www.youtube.com/watch?v=05xs_kyacxI" target="_blank" rel="noopener">
+              <img src="https://i.ytimg.com/vi/05xs_kyacxI/mqdefault.jpg" alt="GPT Image 2: разбор новой модели OpenAI" loading="lazy">
+              <div><h4>GPT Image 2: разбор новой модели OpenAI</h4><span class="d">21.04.2026</span></div>
+            </a>
+          </li>
+          <li>
+            <a class="tv__item rv" href="https://www.youtube.com/watch?v=yX9-bOj1Mu0" target="_blank" rel="noopener">
+              <img src="https://i.ytimg.com/vi/yX9-bOj1Mu0/mqdefault.jpg" alt="Claude Design: обзор нового AI для дизайна" loading="lazy">
+              <div><h4>Claude Design: обзор нового AI для дизайна, прототипов и презентаций</h4><span class="d">17.04.2026</span></div>
+            </a>
+          </li>
+          <li>
+            <a class="tv__item rv" href="https://www.youtube.com/watch?v=tqDBIhMjo8w" target="_blank" rel="noopener">
+              <img src="https://i.ytimg.com/vi/tqDBIhMjo8w/mqdefault.jpg" alt="Claude Opus 4.7 — обзор и вайбкодинг-тесты" loading="lazy">
+              <div><h4>Claude Opus 4.7, обзор, вайбкодинг тесты, сравнение с GPT 5.4</h4><span class="d">16.04.2026</span></div>
+            </a>
+          </li>
+        </ul>
+        <a class="tv__more" href="https://www.youtube.com/@serejaris" target="_blank" rel="noopener">Все выпуски на канале →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 03 · ссылки -->
+<section class="section">
+  <div class="wrap">
+    <div class="section__head">
+      <span class="section__num" aria-hidden="true">03</span>
+      <div class="section__titlewrap">
+        <span class="section__kicker">Рубрика 03 / Где меня искать</span>
+        <h2 class="section__title">Ссылки</h2>
+      </div>
+    </div>
+    <div class="links">
+      <a class="lk lk--accent rv" href="https://t.me/ris_ai" target="_blank" rel="noopener">
+        <span class="lk__tag">Telegram-канал</span>
+        <span class="lk__name">рис. AI</span>
+        <span class="lk__desc">Заметки про агентов и вайбкодинг — короче и чаще, чем в блоге.</span>
+        <span class="lk__arrow">↗</span>
+      </a>
+      <a class="lk rv" href="https://t.me/vibecod3rs" target="_blank" rel="noopener">
+        <span class="lk__tag">Чат · 2000+ человек</span>
+        <span class="lk__name">Сообщество вайбкодеров</span>
+        <span class="lk__desc">Живой чат: кейсы, промпты, взаимопомощь.</span>
+        <span class="lk__arrow">↗</span>
+      </a>
+      <a class="lk rv" href="https://www.youtube.com/@serejaris" target="_blank" rel="noopener">
+        <span class="lk__tag">Видео</span>
+        <span class="lk__name">YouTube</span>
+        <span class="lk__desc">Стримы, разборы релизов, вайбкодинг-тесты моделей.</span>
+        <span class="lk__arrow">↗</span>
+      </a>
+      <a class="lk rv" href="https://vibecoding.phd" target="_blank" rel="noopener">
+        <span class="lk__tag">Практика</span>
+        <span class="lk__name">Кружок вайбкодинга</span>
+        <span class="lk__desc">Регулярная практика направления агентов — вместе.</span>
+        <span class="lk__arrow">↗</span>
+      </a>
+      <a class="lk rv" href="https://hsl.sh" target="_blank" rel="noopener">
+        <span class="lk__tag">Студия</span>
+        <span class="lk__name">HSL — AI-студия</span>
+        <span class="lk__desc">Агентные системы и продукты на заказ.</span>
+        <span class="lk__arrow">↗</span>
+      </a>
+      <a class="lk rv" href="https://x.com/riiiiiiiiss" target="_blank" rel="noopener">
+        <span class="lk__tag">Микроблог</span>
+        <span class="lk__name">Twitter / X</span>
+        <span class="lk__desc">Сырые наблюдения в моменте.</span>
+        <span class="lk__arrow">↗</span>
+      </a>
+      <a class="lk rv" href="https://github.com/serejaris" target="_blank" rel="noopener">
+        <span class="lk__tag">Код</span>
+        <span class="lk__name">GitHub</span>
+        <span class="lk__desc">Публичные репо экспериментов — включая claude-fable.</span>
+        <span class="lk__arrow">↗</span>
+      </a>
+    </div>
+  </div>
+</section>
+</div>
+
+<footer>
+  <div class="inner">
+    <div class="colo">
+      <b>СЕРЕЖА РИС</b> — журнал про вайбкодинг<br>
+      отпечатано агентами · вёрстка: claude code<br>
+      sereja.tech · 2026
+    </div>
+    <div class="price">Цена: <em>1 промпт</em></div>
+  </div>
+</footer>
+
+<script>
+const io=new IntersectionObserver(es=>{
+  es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}});
+},{threshold:.12});
+document.querySelectorAll('.rv').forEach(el=>io.observe(el));
+</script>
+</body>
+</html>

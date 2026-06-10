@@ -167,6 +167,18 @@
     line-height: 1.8;
   }
   footer a { color: var(--ink); }
+  .round-title {
+    margin: 16px 32px 0;
+    padding-top: 32px;
+    border-top: 1px solid var(--line);
+    font-family: 'Inter Tight', sans-serif;
+    font-weight: 900;
+    font-size: clamp(20px, 3vw, 32px);
+    text-transform: uppercase;
+    letter-spacing: -0.02em;
+  }
+  .round-title span { color: var(--acc); }
+  .round-note { margin: 8px 32px 0; color: var(--dim); font-size: 13px; max-width: 70ch; line-height: 1.6; }
 </style>
 </head>
 <body>
@@ -181,6 +193,11 @@
 </header>
 
 <div class="grid" id="grid"></div>
+
+<h2 class="round-title">Раунд <span>2</span> — миксы и доработки</h2>
+<p class="round-note">По итогам голосования: два микса лидеров zine × swiss и три доработки по фидбеку
+   (газета — шрифты, лента — полировка и страница статьи, журнал — спокойнее). Собрано субагентами на Opus 4.8.</p>
+<div class="grid" id="grid2"></div>
 
 <footer>
   Сделано агентами на Claude Fable 5 · код — <a href="https://github.com/serejaris/claude-fable/tree/main/redesign-vote">serejaris/claude-fable/redesign-vote</a> ·
@@ -211,12 +228,25 @@
       colors: ['#e9e5d9', '#161412', '#ff1f6b'], fonts: 'PT Mono · Caveat · Oswald · Rubik Mono One' },
   ];
 
+  const round2 = [
+    { slug: 'zine-swiss-calm', name: 'Швейцарский зин', analog: 'Микс лидеров, спокойный: 80% swiss-дисциплины + 20% дозированного зина',
+      colors: ['#fbfaf7', '#0f0e0d', '#ff1f6b'], fonts: 'Inter Tight · JetBrains Mono · Caveat' },
+    { slug: 'zine-swiss-bold', name: 'Зин на сетке', analog: 'Микс лидеров, дерзкий: панк, дисциплинированный модульной сеткой',
+      colors: ['#e9e5d9', '#161412', '#ff1f6b'], fonts: 'Inter Tight · PT Mono · Caveat' },
+    { slug: 'broadsheet-v2', name: 'Газета 2.0', analog: 'Рефайн типографики: газетная антиква, шкала кеглей, набор с переносами',
+      colors: ['#f4eedd', '#1c1814'], fonts: 'Old Standard TT · Source Serif 4 · Literata · PT Sans Narrow' },
+    { slug: 'wire-feed-v2', name: 'Лента 2.0', analog: 'Полировка ритма ленты + образцовый лонгрид; страницы рифмуются',
+      colors: ['#f7f5f0', '#17150f', '#c8102e'], fonts: 'IBM Plex Mono · Inter Tight · PT Serif' },
+    { slug: 'magazine-v2', name: 'Журнал, тише', analog: 'Журнальная ДНК без максимализма: Kinfolk/Monocle, один терракотовый акцент',
+      colors: ['#f4f0e8', '#211e1a', '#b3543b'], fonts: 'Piazzolla · Golos Text · Cormorant italic' },
+  ];
+
   const voterId = localStorage.getItem('voter') ||
     (() => { const v = crypto.randomUUID(); localStorage.setItem('voter', v); return v; })();
   let myVotes = {};
 
-  const grid = document.getElementById('grid');
-  concepts.forEach((c, i) => {
+  function buildCards(list, gridEl) {
+  list.forEach((c, i) => {
     const card = document.createElement('div');
     card.className = 'card';
     card.innerHTML = `
@@ -255,8 +285,11 @@
     card.querySelectorAll('.votes button').forEach(btn => {
       btn.addEventListener('click', () => vote(c.slug, Number(btn.dataset.value)));
     });
-    grid.appendChild(card);
+    gridEl.appendChild(card);
   });
+  }
+  buildCards(concepts, document.getElementById('grid'));
+  buildCards(round2, document.getElementById('grid2'));
 
   function renderVotes(counts) {
     document.querySelectorAll('.votes button').forEach(btn => {
@@ -269,19 +302,22 @@
     rankCards(counts);
   }
 
-  // сортировка по рейтингу через CSS order — iframe-превью не перезагружаются
+  // сортировка по рейтингу через CSS order — iframe-превью не перезагружаются;
+  // каждый раунд ранжируется внутри своей секции
   function rankCards(counts) {
-    const ranked = concepts
-      .map((c, i) => {
-        const v = counts[c.slug] || { likes: 0, dislikes: 0 };
-        return { slug: c.slug, score: v.likes - v.dislikes, likes: v.likes, index: i };
-      })
-      .sort((a, b) => b.score - a.score || b.likes - a.likes || a.index - b.index);
-    ranked.forEach((r, pos) => {
-      const card = document.querySelector(`.votes button[data-slug="${r.slug}"]`).closest('.card');
-      card.style.order = pos;
-      card.querySelector('.num').textContent = String(pos + 1).padStart(2, '0');
-    });
+    for (const list of [concepts, round2]) {
+      const ranked = list
+        .map((c, i) => {
+          const v = counts[c.slug] || { likes: 0, dislikes: 0 };
+          return { slug: c.slug, score: v.likes - v.dislikes, likes: v.likes, index: i };
+        })
+        .sort((a, b) => b.score - a.score || b.likes - a.likes || a.index - b.index);
+      ranked.forEach((r, pos) => {
+        const card = document.querySelector(`.votes button[data-slug="${r.slug}"]`).closest('.card');
+        card.style.order = pos;
+        card.querySelector('.num').textContent = String(pos + 1).padStart(2, '0');
+      });
+    }
   }
 
   async function loadVotes() {
