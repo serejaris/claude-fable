@@ -53,6 +53,7 @@ body { font-family: 'Alegreya', Georgia, serif; color: var(--ink); }
 .coin { color: var(--gold-bright); font-size: 11px; }
 #gold { color: var(--gold-bright); font-size: 17px; }
 .unit { opacity: 0.6; font-size: 12px; }
+.rate { color: #b8d178; font-size: 12px; margin-left: 6px; font-style: italic; }
 #day, #pop { font-style: italic; opacity: 0.85; font-size: 13.5px; }
 
 .speed-btn, .tb-btn {

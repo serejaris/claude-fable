@@ -13,7 +13,7 @@ const el = (tag, cls, html) => {
 };
 
 export function createUI(game, actions) {
-  const goldEl = $('#gold'), dayEl = $('#day'), popEl = $('#pop');
+  const goldEl = $('#gold'), dayEl = $('#day'), popEl = $('#pop'), rateEl = $('#rate');
   const panel = $('#panel'), ticker = $('#ticker'), modal = $('#modal');
   let lastPanelKey = '';
   let lastPanelAt = 0;
@@ -23,7 +23,7 @@ export function createUI(game, actions) {
   const buildable = ['guild_warrior', 'guild_ranger', 'guild_wizard', 'guild_rogue', 'market', 'blacksmith', 'house'];
   for (const type of buildable) {
     const def = BUILDINGS[type];
-    const btn = el('button', 'build-btn', `<span class="b-name">${def.label}</span><span class="b-cost">${def.cost}g</span>`);
+    const btn = el('button', 'build-btn', `<span class="b-name">${def.label}</span><span class="b-cost">${def.cost} з.</span>`);
     btn.dataset.type = type;
     btn.title = buildTooltip(type);
     btn.onclick = () => actions.setMode(game.view.mode === 'build:' + type ? null : 'build:' + type);
@@ -58,6 +58,8 @@ export function createUI(game, actions) {
 
   function update(state) {
     goldEl.textContent = Math.floor(state.gold);
+    rateEl.textContent = `+${game.incomeRate || 0}/мин`;
+    rateEl.style.opacity = (game.incomeRate || 0) > 0 ? 1 : 0.5;
     const sec = Math.floor(state.tick * SIM_DT);
     dayEl.textContent = `День ${1 + Math.floor(sec / 120)} · ${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`;
     popEl.textContent = `героев: ${state.heroes.length}`;
@@ -144,8 +146,12 @@ export function createUI(game, actions) {
       if (b.type === 'palace') {
         // orphaned graves (guild destroyed) are revivable at the palace
         const orphans = state.graves.filter(g => !state.buildings.some(x => x.id === g.home));
+        const passivePerMin = Math.round(state.buildings.reduce((sum, x) => sum + (BUILDINGS[x.type].income || 0), 0) * 60 / ECON.incomeEvery);
         extra = `<div class="p-rows"><div>Казна <b>${Math.floor(state.gold)}</b></div>
-          <div>Налогов собрано <b>${state.stats.taxes}</b></div></div>
+          <div>Доход зданий <b>+${passivePerMin}/мин</b></div>
+          <div>Налогов собрано <b>${state.stats.taxes}</b></div>
+          <div>Приток сейчас <b>+${game.incomeRate || 0}/мин</b></div></div>
+        <div class="p-intent">Дома, рынок и дворец платят постоянно. Герои несут 30% с покупок и десятину, когда отдыхают дома.</div>
           ${orphans.length ? `<div class="p-roster">${orphans.map(g => {
             const cost = Math.round(ECON.revivePerLevel * g.level * (g.level + 1) / 2);
             return `<div class="r-row dead">☠ ${g.name} <button class="revive-btn" data-grave="${g.id}">Воскресить за ${cost}</button></div>`;
@@ -270,7 +276,7 @@ export function createUI(game, actions) {
           <li><b>Стройте</b> гильдии и нанимайте героев — у каждого свой характер (трус, жадина, храбрец).</li>
           <li><b>Ставьте флаги-награды</b>: ⚑ Атака — на монстра или логово, ⚑ Разведка — в любую точку тумана. Награда делится между героями рядом.</li>
           <li>Награду можно <b>только повышать</b> (+${ECON.flagStep}g). Снять флаг = сжечь золото.</li>
-          <li>Герои тратят заработанное в ваших лавках — <b>30% налога</b> возвращается в казну. Дома и рынок дают пассивный доход.</li>
+          <li><b>Экономика</b>: дома, рынок и дворец капают золото постоянно (стройте их первыми!). Герои тратят заработанное в ваших лавках — <b>30% налога</b> в казну — и платят <b>десятину</b>, отдыхая дома. Индикатор «+N/мин» наверху показывает приток.</li>
           <li>Кликните по герою, чтобы увидеть, <b>что он задумал</b> — и почему отказался умирать за ваши 20 золотых.</li>
         </ul>
         <p><b>Победа</b> — уничтожить все логова. <b>Поражение</b> — потерять дворец.</p>

@@ -74,7 +74,7 @@ export const LAIR_LEVELUP_CAP = 3;     // escalation ceiling: endgame must stay 
 
 export const BUILDINGS = {
   palace:    { label: 'Дворец',          cost: 0,   hp: 1100, w: 2, h: 2, sight: 8, income: 12 }, // royal trickle: economy can never fully stall
-  house:     { label: 'Дом',           cost: 80,  hp: 120, w: 1, h: 1, sight: 3, income: 4, max: 6 },
+  house:     { label: 'Дом',           cost: 80,  hp: 120, w: 1, h: 1, sight: 3, income: 5, max: 8 },
   market:    { label: 'Рынок',     cost: 350, hp: 250, w: 1, h: 1, sight: 4, income: 20 },
   blacksmith:{ label: 'Кузница',      cost: 400, hp: 250, w: 1, h: 1, sight: 4 },
   guild_warrior: { label: 'Гильдия воинов', cost: 350, hp: 300, w: 1, h: 1, sight: 4, hires: 'warrior', cap: 3 },
@@ -85,7 +85,7 @@ export const BUILDINGS = {
 
 export const ECON = {
   taxRate: 0.3,            // share of hero purchases reaching treasury
-  incomeEvery: 10,         // s between passive income ticks
+  incomeEvery: 8,          // s between passive income ticks
   potionPrice: 25,
   potionHealFrac: 0.5,     // of maxHp
   weaponPrices: [100, 300, 600],   // tier 1..3, hero-paid (t3 must be reachable in a 30-min life)

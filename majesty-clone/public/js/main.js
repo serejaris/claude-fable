@@ -19,6 +19,17 @@ const game = {
 };
 
 const vfx = [];
+const inflowLog = []; // {tick, amount} — поступления в казну для индикатора «+N/мин»
+function logInflow(state, amount) {
+  if (amount > 0) inflowLog.push({ tick: state.tick, amount });
+}
+function incomeRate(state) {
+  const horizon = 600; // 60 сим-секунд
+  while (inflowLog.length && inflowLog[0].tick < state.tick - horizon) inflowLog.shift();
+  const sum = inflowLog.reduce((s, e) => s + e.amount, 0);
+  const span = Math.min(state.tick, horizon) || 1;
+  return Math.round(sum * (600 / span));
+}
 const renderer = createRenderer($('terrain'), $('entities'), $('effects'));
 function $(id) { return document.getElementById(id); }
 
@@ -55,6 +66,8 @@ function boot(seed, fresh = false) {
   game.view.selected = null;
   game.view.mode = null;
   lastAutosave = 0;
+  inflowLog.length = 0;
+  game.hintedMarket = false;
   renderer.prerender(game.state);
   renderer.camera.x = 32 * TILE; renderer.camera.y = 32 * TILE; renderer.camera.zoom = 1;
   if (!loaded && !localStorage.getItem('majesty-clone-helped')) {
@@ -92,6 +105,7 @@ function consumeEvents(state) {
         vfx.push({ kind: 'text', text: `+${e.amount} зол.`, x: e.x, y: e.y - 12, color: '#e9c95a', t0: performance.now(), dur: 900 });
         break;
       case 'purchase': {
+        logInflow(state, e.tax);
         // покупка должна быть видна: герой реально проапгрейдился
         const labels = { weapon: '⚔ новое оружие!', armor: '🛡 новая броня!', potion: '🧪 зелье' };
         vfx.push({ kind: 'text', text: labels[e.item] || 'покупка', x: e.x, y: e.y - 14, color: '#e9c95a', big: e.item !== 'potion', t0: performance.now(), dur: 1500 });
@@ -100,10 +114,12 @@ function consumeEvents(state) {
         break;
       }
       case 'dues':
+        logInflow(state, e.amount);
         vfx.push({ kind: 'text', text: `десятина +${e.amount} зол.`, x: e.x, y: e.y - 22, color: '#b8d178', t0: performance.now(), dur: 1100 });
         break;
       case 'income':
-        if (Math.random() < 0.3) vfx.push({ kind: 'text', text: `+${e.amount}`, x: e.x, y: e.y - 16, color: 'rgba(233,201,90,0.7)', t0: performance.now(), dur: 800 });
+        logInflow(state, e.amount);
+        vfx.push({ kind: 'text', text: `+${e.amount}`, x: e.x, y: e.y - 16, color: 'rgba(233,201,90,0.75)', t0: performance.now(), dur: 900 });
         break;
       case 'discover':
         ui.chronicle(`🗺 Разведчики доносят: обнаружено — ${e.label}!`, 'warn');
@@ -147,11 +163,18 @@ function frame(now) {
     steps++;
     acc -= SIM_DT * 1000;
   }
+  // one-time nudge: economy needs a market (the most common "slow economy" mistake)
+  if (!game.hintedMarket && game.state.tick > 900 && !game.state.result
+    && !game.state.buildings.some(b => b.type === 'market')) {
+    game.hintedMarket = true;
+    ui.chronicle('💡 Казна растёт медленно: постройте Рынок и Дома — это основа дохода', 'warn');
+  }
   // autosave every 30 sim-seconds
   if (game.state.tick - lastAutosave > 300 && !game.state.result) {
     lastAutosave = game.state.tick;
     saveGame(game.state);
   }
+  game.incomeRate = incomeRate(game.state);
   const alpha = Math.min(acc / (SIM_DT * 1000), 1);
   updateHover();
   renderer.draw(game.state, alpha, game.view, vfx);
@@ -215,6 +238,7 @@ window.addEventListener('keydown', e => {
   if (e.key === '1') game.speed = 1;
   if (e.key === '2') game.speed = 2;
   if (e.key === '3') game.speed = 4;
+  if (e.key === '4') game.speed = 8;
   if (e.key === 'Escape') { game.view.mode = null; game.view.selected = null; }
   const pan = 28 / renderer.camera.zoom;
   if (e.key === 'ArrowLeft' || e.key === 'a') renderer.camera.x -= pan;

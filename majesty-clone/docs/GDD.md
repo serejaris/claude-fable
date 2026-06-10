@@ -64,12 +64,12 @@ Browser-based indirect-control kingdom sim. Игрок никогда не ко�
 |---|---|---|
 | Palace | стартовое, 1100 HP | казна, trickle-доход, стрелки; разрушен = поражение |
 | Warriors / Rangers / Wizards / Rogues Guild | 300–500g | найм, кап 3 героя, банковка золота |
-| Marketplace | 350g | зелья 25g героям; пассив +10g/10s игроку |
+| Marketplace | 350g | зелья 25g героям; пассив +20g/8s игроку |
 | Blacksmith | 400g | апгрейды weapon 100/300/600, armor 150/450/800 — герои платят сами |
-| House | 80g | пассив +2g/10s, до 6 шт |
+| House | 80g | пассив +5g/8s, до 8 шт |
 | Graveyard | авто | мёртвый герой → могила в гильдии, revive 8×L(L+1)/2 g (анти-permadeath) |
 
-Налог игрока: 30% с каждой покупки героя (видимый +gold попап у магазина).
+Налог игрока: 30% с каждой покупки героя (видимый +gold попап у магазина). Индикатор притока «+N/мин» в топ-баре; панель дворца показывает разбивку дохода.
 
 ## Monsters & Director
 
@@ -81,7 +81,7 @@ Browser-based indirect-control kingdom sim. Игрок никогда не ко�
 ## Tech
 
 - Vanilla JS, ES modules, **zero deps на клиенте**; Canvas 2D, 3 слоя (terrain prerender / entities / effects); HTML overlay для всего UI.
-- Fixed timestep: SIM_STEP = 100ms (10 Hz), интерполяция рендера, clamp 250ms, speed {0,1,2,4}.
+- Fixed timestep: SIM_STEP = 100ms (10 Hz), интерполяция рендера, clamp 250ms, speed {0,1,2,4,8}.
 - Детерминизм: mulberry32 seeded PRNG в state, tick — единственные часы, sim/ не импортирует DOM. Headless-прогон `node sim/headless.js --minutes 30` для баланса.
 - Save/load: `{version, state}` в localStorage, автосейв 30 sim-сек + visibilitychange.
 - Весь баланс в одном data-файле (`sim/data.js`).
