@@ -1,6 +1,7 @@
 const express = require('express');
 const http = require('http');
 const path = require('path');
+const fs = require('fs');
 const { WebSocketServer } = require('ws');
 
 const PORT = process.env.PORT || 3000;
@@ -13,17 +14,12 @@ const KILL_TARGET = 20;
 const MEDKIT_HEAL = 50;
 const MEDKIT_RESPAWN_MS = 25000;
 const SPAWN_PROT_MS = 1500;
+const HIT_DMG = 18;            // flat, top-down has no headshots (6 hits to kill)
 
-// [x, z, y?] — must match client MEDKITS (map v2: doors, catwalk base, B yard, A approach, long, tunnels)
-const MEDKITS = [
-  [0, -2], [8, -15], [-50, -44], [52, -31], [62, -8], [-59.5, 35],
-];
-
-// map v2: T zone south (z>0), CT zone north (z<0)
-const SPAWNS = [
-  [-14, 0, 56], [-5, 0, 56], [4, 0, 56], [12, 0, 57], [24, 0, 57], [-10, 0, 62], [8, 0, 62], [17, 0, 62],
-  [-12, 0, -62], [-6, 0, -62], [0, 0, -62], [6, 0, -62], [12, 0, -62], [-9, 0, -57], [3, 0, -57], [15, 0, -57],
-];
+// single source of truth — same file the client renders (map v3, gen_map.py)
+const MAP = JSON.parse(fs.readFileSync(path.join(__dirname, 'public', 'map.json'), 'utf8'));
+const MEDKITS = MAP.medkits;   // [x, z]
+const SPAWNS = MAP.spawns;     // [x, y, z] — T spawns sit on the +1.5 plateau
 
 const app = express();
 app.use(require('compression')());
@@ -98,8 +94,10 @@ function publicPlayer(p) {
 wss.on('connection', (ws) => {
   let player = null;
   let room = null;
+  let spectId = 0;
   ws.isAlive = true;
   ws.on('pong', () => { ws.isAlive = true; });
+  ws.on('error', () => ws.terminate()); // ECONNRESET etc must not crash the process
 
   ws.on('message', (raw) => {
     let msg;
@@ -107,10 +105,22 @@ wss.on('connection', (ws) => {
 
     if (msg.t === 'ping') { ws.send(JSON.stringify({ t: 'pong', ts: msg.ts })); return; }
 
-    if (msg.t === 'join' && !player) {
+    if (msg.t === 'join' && !player && !spectId) {
       const roomName = String(msg.room || 'dust').slice(0, 24).replace(/[^\w-]/g, '') || 'dust';
       const name = String(msg.name || 'player').slice(0, 16) || 'player';
       room = getRoom(roomName);
+      if (msg.spectate) { // socket-only spectator: receives broadcasts, owns no player
+        spectId = nextId++;
+        room.sockets.set(spectId, ws);
+        ws.send(JSON.stringify({
+          t: 'init', id: 0, spawn: [0, 0, 0],
+          players: [...room.players.values()].map(publicPlayer),
+          medkits: room.medkits.map(m => m.downUntil > Date.now() ? 0 : 1),
+          roundEndsAt: room.roundEndsAt, now: Date.now(),
+          frozen: room.breakUntil > Date.now(),
+        }));
+        return;
+      }
       const [sx, sy, sz] = pickSpawn(room, null);
       player = {
         id: nextId++, name,
@@ -126,6 +136,7 @@ wss.on('connection', (ws) => {
         players: [...room.players.values()].map(publicPlayer),
         medkits: room.medkits.map(m => m.downUntil > Date.now() ? 0 : 1),
         roundEndsAt: room.roundEndsAt, now: Date.now(),
+        frozen: room.breakUntil > Date.now(),
       }));
       broadcast(room, { t: 'joined', player: publicPlayer(player) }, player.id);
       return;
@@ -135,7 +146,12 @@ wss.on('connection', (ws) => {
     switch (msg.t) {
       case 'state': {
         if (player.dead) break;
-        player.x = +msg.x || 0; player.y = +msg.y || 0; player.z = +msg.z || 0;
+        if (Date.now() < (player.ignoreStateUntil || 0)) break; // server just teleported them
+        const nx = +msg.x, ny = +msg.y, nz = +msg.z;
+        if (!Number.isFinite(nx) || !Number.isFinite(ny) || !Number.isFinite(nz)) break;
+        player.x = Math.max(-72.5, Math.min(72.5, nx));
+        player.y = Math.max(0, Math.min(6, ny));
+        player.z = Math.max(-72.5, Math.min(72.5, nz));
         player.ry = +msg.ry || 0; player.rx = +msg.rx || 0;
         if (player.hp < MAX_HP && !(room.breakUntil > Date.now())) {
           for (let i = 0; i < MEDKITS.length; i++) {
@@ -153,25 +169,35 @@ wss.on('connection', (ws) => {
         }
         break;
       }
-      case 'shoot': // tracer/sound relay
+      case 'shoot': { // tracer/sound relay — capped & validated (broadcast amplification)
+        const now = Date.now();
+        if (player.dead || now - (player.lastShootMsg || 0) < 100) break;
+        const vec3 = a => Array.isArray(a) && a.length === 3 && a.every(Number.isFinite);
+        if (!vec3(msg.o) || !vec3(msg.d)) break;
+        player.lastShootMsg = now;
         broadcast(room, { t: 'shoot', id: player.id, o: msg.o, d: msg.d }, player.id);
         break;
+      }
       case 'hit': {
         const now = Date.now();
         if (room.breakUntil > now) break;
-        if (now - (player.lastHitMsg || 0) < 95) break; // fire-rate cap, devtools-proof
-        player.lastHitMsg = now;
         const target = room.players.get(+msg.target);
         if (!target || target.dead || player.dead) break;
         if (now < target.protUntil) break;
-        const dmg = msg.head ? 100 : 30;
-        target.hp -= dmg;
+        // server-side range check: RANGE 34 + slack for movement since last state
+        const dx = target.x - player.x, dz = target.z - player.z;
+        if (dx * dx + dz * dz > 40 * 40) break;
+        // leaky bucket: ~110ms average, absorbs 2-3 packet bursts from TCP jitter
+        const nextHit = Math.max(player.nextHit || 0, now - 240) + 110;
+        if (nextHit > now + 240) break;
+        player.nextHit = nextHit;
+        target.hp -= HIT_DMG;
         if (target.hp <= 0) {
           target.hp = 0; target.dead = true;
           target.deaths++; player.kills++;
           player.streak = (player.streak || 0) + 1;
           target.streak = 0;
-          broadcast(room, { t: 'die', id: target.id, by: player.id, head: !!msg.head, streak: player.streak });
+          broadcast(room, { t: 'die', id: target.id, by: player.id, streak: player.streak });
           if (player.kills >= KILL_TARGET) room.roundEndsAt = Date.now();
           setTimeout(() => {
             if (!room.players.has(target.id)) return;
@@ -179,6 +205,7 @@ wss.on('connection', (ws) => {
             target.hp = MAX_HP; target.dead = false;
             target.protUntil = Date.now() + SPAWN_PROT_MS;
             target.x = sx; target.y = sy; target.z = sz;
+            target.ignoreStateUntil = Date.now() + 300; // drop stale pre-respawn echoes
             broadcast(room, { t: 'respawn', id: target.id, spawn: [sx, sy, sz] });
           }, RESPAWN_MS);
         } else {
@@ -186,18 +213,25 @@ wss.on('connection', (ws) => {
         }
         break;
       }
-      case 'chatping':
+      case 'chatping': {
+        const now = Date.now();
+        if (now - (player.lastTaunt || 0) < 1200) break; // cooldown is server-enforced too
+        player.lastTaunt = now;
         broadcast(room, { t: 'chatping', id: player.id, n: +msg.n || 0 }, player.id);
         break;
+      }
     }
   });
 
   ws.on('close', () => {
-    if (!player || !room) return;
-    room.players.delete(player.id);
-    room.sockets.delete(player.id);
-    broadcast(room, { t: 'left', id: player.id });
-    if (room.players.size === 0) rooms.delete(room.name);
+    if (!room) return;
+    if (spectId) room.sockets.delete(spectId);
+    if (player) {
+      room.players.delete(player.id);
+      room.sockets.delete(player.id);
+      broadcast(room, { t: 'left', id: player.id });
+    }
+    if (room.players.size === 0 && room.sockets.size === 0) rooms.delete(room.name);
   });
 });
 
@@ -215,6 +249,7 @@ setInterval(() => {
           p.protUntil = now + SPAWN_PROT_MS;
           const [sx, sy, sz] = pickSpawn(room, p);
           p.x = sx; p.y = sy; p.z = sz;
+          p.ignoreStateUntil = now + 300;
           const ws = room.sockets.get(p.id);
           if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 'roundstart', spawn: [sx, sy, sz], roundEndsAt: room.roundEndsAt, now }));
         }
