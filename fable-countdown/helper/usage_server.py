@@ -27,6 +27,10 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 PORT = 46123
 USAGE_URL = "https://api.anthropic.com/api/oauth/usage"
+# written by ~/.claude/statusline.sh from Claude Code's own statusline payload
+# (rate_limits field) — fresher than anything we can fetch ourselves, and free
+STATUSLINE_CACHE = "/tmp/claude-usage-cache.json"
+STATUSLINE_FRESH = 15 * 60
 CACHE_TTL = 180          # seconds between upstream polls
 RETRY_AFTER = 120        # backoff between failed upstream attempts (endpoint rate-limits hard)
 STALE_OK = 6 * 3600      # serve stale cache up to this age on upstream errors
@@ -121,9 +125,25 @@ def fetch_upstream() -> dict | None:
     return normalize(raw)
 
 
+def read_statusline_cache() -> dict | None:
+    try:
+        import os
+        if time.time() - os.path.getmtime(STATUSLINE_CACHE) > STATUSLINE_FRESH:
+            return None
+        with open(STATUSLINE_CACHE) as f:
+            raw = json.load(f)
+        data = normalize(raw)
+        return data if (data["session"] or data["week"]) else None
+    except Exception:
+        return None
+
+
 def get_usage() -> dict:
     with _lock:
         now = time.time()
+        sl = read_statusline_cache()
+        if sl is not None:
+            return {"ok": True, "stale": False, "age": 0, "source": "statusline", **sl}
         age = now - _cache["fetched_at"]
         if _cache["data"] is not None and age < CACHE_TTL:
             return {"ok": True, "stale": False, "age": int(age), **_cache["data"]}
