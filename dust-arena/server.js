@@ -6,11 +6,10 @@ const { WebSocketServer } = require('ws');
 
 const PORT = process.env.PORT || 3000;
 const TICK_MS = 50;            // 20 Hz state broadcast
-const ROUND_MS = 5 * 60 * 1000;
-const ROUND_BREAK_MS = 7000;
-const RESPAWN_MS = 3000;
+const ROUND_MS = 1 * 60 * 1000; // 1-minute rounds — fast team deathmatch
+const ROUND_BREAK_MS = 6000;
+const RESPAWN_MS = 2000;       // snappier respawn keeps the short round flowing
 const MAX_HP = 100;
-const KILL_TARGET = 20;
 const MEDKIT_HEAL = 50;
 const MEDKIT_RESPAWN_MS = 25000;
 const SPAWN_PROT_MS = 1500;
@@ -19,7 +18,15 @@ const HIT_DMG = 18;            // flat, top-down has no headshots (6 hits to kil
 // single source of truth — same file the client renders (map v3, gen_map.py)
 const MAP = JSON.parse(fs.readFileSync(path.join(__dirname, 'public', 'map.json'), 'utf8'));
 const MEDKITS = MAP.medkits;   // [x, z]
-const SPAWNS = MAP.spawns;     // [x, y, z] — T spawns sit on the +1.5 plateau
+const SPAWNS = MAP.spawns;     // [x, y, z] — first half = T (south +1.5 plateau), second = CT (north)
+
+// teams: 0 = T (warm), 1 = CT (cool). spawns split T/CT, colors shaded so teammates differ.
+const HALF = Math.floor(SPAWNS.length / 2);
+const SPAWN_POOLS = [SPAWNS.slice(0, HALF), SPAWNS.slice(HALF)];
+const TEAM_COLORS = [
+  ['#d9a24b', '#e0b85f', '#c98a3a'], // T — sand / gold / amber
+  ['#4b8bd9', '#5fa0e0', '#3a6fc9'], // CT — sky / steel / cobalt
+];
 
 const app = express();
 app.use(require('compression')());
@@ -53,6 +60,7 @@ function getRoom(name) {
       sockets: new Map(), // id -> ws
       roundEndsAt: Date.now() + ROUND_MS,
       breakUntil: 0,
+      nextTeam: 0,        // tie-break toggle for balanced team assignment
       medkits: MEDKITS.map(() => ({ downUntil: 0 })),
     };
     rooms.set(name, room);
@@ -67,25 +75,35 @@ function broadcast(room, msg, exceptId) {
   }
 }
 
-// farthest-from-enemies spawn, random among top-3 ties — no more spawning into a camper's crosshair
-function pickSpawn(room, me) {
+// balance new joiners into the smaller team; alternate on a tie
+function pickTeam(room) {
+  let c0 = 0, c1 = 0;
+  for (const p of room.players.values()) (p.team === 0 ? c0++ : c1++);
+  if (c0 < c1) return 0;
+  if (c1 < c0) return 1;
+  const t = room.nextTeam; room.nextTeam = t ^ 1; return t;
+}
+
+// spawn on your own side, farthest from ENEMIES (teammates don't push you off)
+function pickSpawn(room, me, team) {
+  const pool = SPAWN_POOLS[team] && SPAWN_POOLS[team].length ? SPAWN_POOLS[team] : SPAWNS;
   let best = [], bd = -1;
-  for (const s of SPAWNS) {
+  for (const s of pool) {
     let d = 1e9;
     for (const p of room.players.values()) {
-      if (p.dead || p === me) continue;
+      if (p.dead || p === me || p.team === team) continue; // distance to enemies only
       const dx = p.x - s[0], dz = p.z - s[2];
       d = Math.min(d, dx * dx + dz * dz);
     }
     if (d > bd + 1) { bd = d; best = [s]; }
     else if (d > bd - 1) best.push(s);
   }
-  return best[Math.floor(Math.random() * best.length)] || SPAWNS[0];
+  return best[Math.floor(Math.random() * best.length)] || pool[0];
 }
 
 function publicPlayer(p) {
   return {
-    id: p.id, name: p.name, color: p.color,
+    id: p.id, name: p.name, color: p.color, team: p.team,
     x: p.x, y: p.y, z: p.z, ry: p.ry, rx: p.rx,
     hp: p.hp, kills: p.kills, deaths: p.deaths, dead: p.dead,
   };
@@ -121,10 +139,12 @@ wss.on('connection', (ws) => {
         }));
         return;
       }
-      const [sx, sy, sz] = pickSpawn(room, null);
+      const team = pickTeam(room);
+      const shade = [...room.players.values()].filter(p => p.team === team).length % TEAM_COLORS[team].length;
+      const [sx, sy, sz] = pickSpawn(room, null, team);
       player = {
-        id: nextId++, name,
-        color: ['#d9a24b', '#4b8bd9', '#6bc25e', '#c25e5e', '#9b6bd9', '#d9d24b'][Math.floor(Math.random() * 6)],
+        id: nextId++, name, team,
+        color: TEAM_COLORS[team][shade],
         x: sx, y: sy, z: sz, ry: 0, rx: 0,
         hp: MAX_HP, kills: 0, deaths: 0, dead: false,
         protUntil: Date.now() + SPAWN_PROT_MS,
@@ -183,6 +203,7 @@ wss.on('connection', (ws) => {
         if (room.breakUntil > now) break;
         const target = room.players.get(+msg.target);
         if (!target || target.dead || player.dead) break;
+        if (target.team === player.team) break; // no friendly fire
         if (now < target.protUntil) break;
         // server-side range check: RANGE 34 + slack for movement since last state
         const dx = target.x - player.x, dz = target.z - player.z;
@@ -198,10 +219,9 @@ wss.on('connection', (ws) => {
           player.streak = (player.streak || 0) + 1;
           target.streak = 0;
           broadcast(room, { t: 'die', id: target.id, by: player.id, streak: player.streak });
-          if (player.kills >= KILL_TARGET) room.roundEndsAt = Date.now();
           setTimeout(() => {
             if (!room.players.has(target.id)) return;
-            const [sx, sy, sz] = pickSpawn(room, target);
+            const [sx, sy, sz] = pickSpawn(room, target, target.team);
             target.hp = MAX_HP; target.dead = false;
             target.protUntil = Date.now() + SPAWN_PROT_MS;
             target.x = sx; target.y = sy; target.z = sz;
@@ -247,7 +267,7 @@ setInterval(() => {
         for (const p of room.players.values()) {
           p.kills = 0; p.deaths = 0; p.hp = MAX_HP; p.dead = false; p.streak = 0;
           p.protUntil = now + SPAWN_PROT_MS;
-          const [sx, sy, sz] = pickSpawn(room, p);
+          const [sx, sy, sz] = pickSpawn(room, p, p.team);
           p.x = sx; p.y = sy; p.z = sz;
           p.ignoreStateUntil = now + 300;
           const ws = room.sockets.get(p.id);
@@ -256,10 +276,13 @@ setInterval(() => {
       }
     } else if (now >= room.roundEndsAt) {
       room.breakUntil = now + ROUND_BREAK_MS;
+      const teamKills = [0, 0];
+      for (const p of room.players.values()) teamKills[p.team] += p.kills;
+      const winTeam = teamKills[0] === teamKills[1] ? -1 : (teamKills[0] > teamKills[1] ? 0 : 1);
       const scores = [...room.players.values()]
-        .map(p => ({ id: p.id, name: p.name, kills: p.kills, deaths: p.deaths }))
+        .map(p => ({ id: p.id, name: p.name, team: p.team, kills: p.kills, deaths: p.deaths }))
         .sort((a, b) => b.kills - a.kills);
-      broadcast(room, { t: 'roundend', scores, breakMs: ROUND_BREAK_MS });
+      broadcast(room, { t: 'roundend', scores, teamKills, winTeam, breakMs: ROUND_BREAK_MS });
     }
     // medkit respawns
     for (let i = 0; i < room.medkits.length; i++) {

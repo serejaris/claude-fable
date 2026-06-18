@@ -42,7 +42,7 @@
 <div class="hud" id="crosshair">+</div>
 <div class="hud" id="hp">+100</div>
 <div class="hud" id="ammo">30 / ∞</div>
-<div class="hud" id="timer">3:00</div>
+<div class="hud" id="timer">1:00</div>
 <div class="hud" id="killfeed"></div>
 <div class="hud" id="msg"></div>
 <div class="hud" id="dmgflash"></div>
@@ -54,11 +54,11 @@
 <div id="join">
   <div class="box">
     <h1>DUST ARENA</h1>
-    <p class="sub">top-down arena &middot; de_dust vibes</p>
+    <p class="sub">top-down team arena &middot; de_dust vibes</p>
     <input id="nick" maxlength="16" placeholder="nickname">
     <input id="room" maxlength="24" placeholder="room (default: dust)">
     <button id="go">ENTER →</button>
-    <div class="hint">WASD move &middot; MOUSE aim &middot; LMB shoot<br>SPACE jump &middot; R reload &middot; TAB scoreboard &middot; M mute<br>1-4 taunts (EZ / NICE SHOT / RUSH B / HELP!)</div>
+    <div class="hint">auto team-balanced &middot; frag the other color<br>WASD move &middot; MOUSE aim &middot; LMB shoot<br>SPACE jump &middot; R reload &middot; TAB scoreboard &middot; M mute<br>1-4 taunts (EZ / NICE SHOT / RUSH B / HELP!)</div>
   </div>
 </div>
 <script type="importmap">
@@ -112,6 +112,16 @@ try {
 }
 for (const b of MAP.boxes) box(b.x, b.z, b.w, b.h, b.d, b.c, b.y || 0);
 
+// ---------- 2D shot occlusion (top-down: height never matters, only footprint) ----------
+// Bullets travel on the XZ plane. A box blocks a shot iff it is chest-high cover/wall
+// (h >= 1.2) AND it is not a walkable plateau (#c2a96a). Soft cover (h<1.2), stairs/marks
+// and the elevation plateaus themselves stay transparent — so a player on the +1.5 T plateau
+// and one on the ground hit each other freely. Same flat model as Brawl Stars.
+const PLAT_COLOR = '#c2a96a';
+const shotBlockers = MAP.boxes
+  .filter(b => b.h >= 1.2 && b.c !== PLAT_COLOR)
+  .map(b => ({ minX: b.x - b.w / 2, maxX: b.x + b.w / 2, minZ: b.z - b.d / 2, maxZ: b.z + b.d / 2 }));
+
 // ---------- player physics ----------
 const P = { r: 0.4, h: 1.8, speed: 7.2, walk: 3.4, jump: 7.5, grav: 21, chest: 1.2 };
 const RANGE = 34; // hitscan range cap (Brawl-Stars rule: no cross-map shots)
@@ -150,19 +160,53 @@ const labelCanvas = (text) => {
   ctx.strokeText(text, 128, 34); ctx.fillText(text, 128, 34);
   return cv;
 };
+const HIP_Y = 0.7, BODY_Y = 0.85, GUN_Y = 1.2;
 function soldierModel(color, pid) {
   const g = new THREE.Group();
   const body = new THREE.Mesh(new THREE.BoxGeometry(0.7, 1.05, 0.4), new THREE.MeshLambertMaterial({ color }));
-  body.position.y = 0.85;
-  const legs = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.7, 0.35), new THREE.MeshLambertMaterial({ color: 0x4a4438 }));
-  legs.position.y = 0.35;
+  body.position.y = BODY_Y;
   const head = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.34, 0.34), new THREE.MeshLambertMaterial({ color: 0xd9b48f }));
   head.position.y = 1.55;
   const gun = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.6), new THREE.MeshLambertMaterial({ color: 0x333028 }));
-  gun.position.set(0.25, 1.2, -0.3);
-  g.add(body, legs, head, gun);
-  if (pid != null) { body.userData.pid = pid; legs.userData.pid = pid; head.userData.pid = pid; }
+  gun.position.set(0.25, GUN_Y, -0.3);
+  // legs hang from hip pivots so they can swing through a walk cycle
+  const mkLeg = (x) => {
+    const pivot = new THREE.Group(); pivot.position.set(x, HIP_Y, 0);
+    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.7, 0.34), new THREE.MeshLambertMaterial({ color: 0x4a4438 }));
+    leg.position.y = -0.35; pivot.add(leg);
+    return { pivot, leg };
+  };
+  const legL = mkLeg(-0.16), legR = mkLeg(0.16);
+  g.add(body, head, gun, legL.pivot, legR.pivot);
+  if (pid != null) for (const m of [body, head, legL.leg, legR.leg]) m.userData.pid = pid;
+  g.userData.aimMeshes = [body, head, legL.leg, legR.leg];
+  g.userData.anim = { body, gun, legL: legL.pivot, legR: legR.pivot, phase: 0 };
   return g;
+}
+// shared walk cycle: legs swing in antiphase, torso + gun bob on the down-beat
+function animateWalk(anim, dt, moving) {
+  if (!anim) return;
+  if (moving) {
+    anim.phase += dt * 11;
+    const s = Math.sin(anim.phase);
+    anim.legL.rotation.x = s * 0.7;
+    anim.legR.rotation.x = -s * 0.7;
+    const bob = Math.abs(Math.sin(anim.phase)) * 0.07;
+    anim.body.position.y = BODY_Y + bob;
+    anim.gun.position.y = GUN_Y + bob;
+  } else {
+    const k = Math.min(1, dt * 12);
+    anim.legL.rotation.x *= 1 - k;
+    anim.legR.rotation.x *= 1 - k;
+    anim.body.position.y += (BODY_Y - anim.body.position.y) * k;
+    anim.gun.position.y += (GUN_Y - anim.gun.position.y) * k;
+  }
+}
+// snap legs/torso to neutral — dead bodies skip animateWalk, so reset on death & respawn
+function resetAnim(anim) {
+  if (!anim) return;
+  anim.legL.rotation.x = 0; anim.legR.rotation.x = 0;
+  anim.body.position.y = BODY_Y; anim.gun.position.y = GUN_Y; anim.phase = 0;
 }
 
 // own avatar (visible in top-down — you ARE on the screen now)
@@ -225,17 +269,17 @@ function makeRemote(p) {
   g.add(label);
   g.position.set(p.x, p.y, p.z);
   scene.add(g);
-  remotes.set(p.id, { group: g, label, buf: [], name: p.name, color: p.color, hp: p.hp, dead: p.dead, fall: p.dead ? 1 : 0, kills: p.kills || 0, deaths: p.deaths || 0 });
+  remotes.set(p.id, { group: g, label, buf: [], name: p.name, color: p.color, team: p.team || 0, aimMeshes: g.userData.aimMeshes, hp: p.hp, dead: p.dead, fall: p.dead ? 1 : 0, kills: p.kills || 0, deaths: p.deaths || 0 });
   if (p.dead) { g.rotation.x = Math.PI / 2; g.position.y = 0.2; }
 }
 function disposeGroup(g) {
-  for (const c of g.children) {
+  g.traverse(c => { // legs now nest inside hip pivots — traverse, don't just walk children
     if (c.material) {
       if (c.material.map) c.material.map.dispose();
       c.material.dispose();
     }
     if (c.geometry) c.geometry.dispose();
-  }
+  });
 }
 function removeRemote(id) {
   const r = remotes.get(id);
@@ -243,17 +287,14 @@ function removeRemote(id) {
 }
 function killRemote(r) {
   r.dead = true; r.fall = 0; r.group.visible = true; r.label.visible = false;
+  resetAnim(r.group.userData.anim); // corpse lies flat, not mid-stride
   burst(r.group.position.clone().add(new THREE.Vector3(0, 1.2, 0)), 0x991111);
 }
 function flinch(r) {
-  for (const c of r.group.children) {
-    if (c.material && c.material.emissive) {
-      c.material.emissive.setHex(0x661111);
-    }
-  }
+  r.group.traverse(c => { if (c.material && c.material.emissive) c.material.emissive.setHex(0x661111); });
   clearTimeout(r.flinchT);
   r.flinchT = setTimeout(() => {
-    for (const c of r.group.children) if (c.material && c.material.emissive) c.material.emissive.setHex(0);
+    r.group.traverse(c => { if (c.material && c.material.emissive) c.material.emissive.setHex(0); });
   }, 90);
 }
 const TAUNTS = ['EZ', 'NICE SHOT', 'RUSH B', 'HELP!'];
@@ -267,6 +308,7 @@ function taunt(n) {
 function reviveRemote(r) {
   r.dead = false; r.fall = 0; r.buf = [];
   r.group.rotation.x = 0; r.group.position.y = 0;
+  resetAnim(r.group.userData.anim);
   r.group.visible = true; r.label.visible = true;
 }
 
@@ -358,8 +400,10 @@ function shotSound(vol = 0.25, pan = 0) {
 }
 
 // ---------- net ----------
-let ws = null, myId = 0, myHp = 100, myKills = 0, myDeaths = 0, dead = false;
-let roundEndsAt = Date.now() + 180000, frozen = false, serverOffset = 0;
+let ws = null, myId = 0, myTeam = 0, myHp = 100, myKills = 0, myDeaths = 0, dead = false;
+let roundEndsAt = Date.now() + 60000, frozen = false, serverOffset = 0;
+const teamName = t => t === 0 ? 'ORANGE' : 'BLUE';
+const TEAM_HUD = ['#e6b85a', '#62a0e6']; // HUD tints matching server team colors
 const $ = id => document.getElementById(id);
 const sb = $('scoreboard');
 
@@ -426,7 +470,7 @@ function onMsg(m) {
       roundEndsAt = m.roundEndsAt; serverOffset = m.now - Date.now();
       for (const p of m.players) {
         if (p.id !== myId) makeRemote(p);
-        else { myColor = p.color; buildMe(); }
+        else { myColor = p.color; myTeam = p.team || 0; buildMe(); }
       }
       buildMedkits(m.medkits || []);
       snapCamera();
@@ -490,7 +534,7 @@ function onMsg(m) {
       const killer = m.by === myId ? 'you' : (remotes.get(m.by)?.name || '?');
       const victim = m.id === myId ? 'you' : (remotes.get(m.id)?.name || '?');
       feed(`${killer} ☠ ${victim}`);
-      if (m.id === myId) { dead = true; myHp = 0; showMsg('YOU DIED — respawning…', 3000); flash(); $('deathveil').style.opacity = 1; play('death', 0.8); if (me) me.rotation.x = Math.PI / 2; }
+      if (m.id === myId) { dead = true; myHp = 0; showMsg('YOU DIED — respawning…', 2000); flash(); $('deathveil').style.opacity = 1; play('death', 0.8); if (me) { me.rotation.x = Math.PI / 2; resetAnim(me.userData.anim); } }
       else {
         const r = remotes.get(m.id);
         if (r) {
@@ -509,13 +553,17 @@ function onMsg(m) {
       break;
     }
     case 'respawn':
-      if (m.id === myId) { dead = false; myHp = 100; pos.set(...m.spawn); vel.set(0, 0, 0); $('deathveil').style.opacity = 0; if (me) me.rotation.x = 0; resetGun(); snapCamera(); }
+      if (m.id === myId) { dead = false; myHp = 100; pos.set(...m.spawn); vel.set(0, 0, 0); $('deathveil').style.opacity = 0; if (me) { me.rotation.x = 0; resetAnim(me.userData.anim); } resetGun(); snapCamera(); }
       else { const r = remotes.get(m.id); if (r) { reviveRemote(r); r.group.position.set(...m.spawn); } }
       break;
     case 'roundend': {
       frozen = true;
-      const top = m.scores[0];
-      showMsg(`ROUND OVER${top ? ' — ' + top.name + ' wins (' + top.kills + ' kills)' : ''}`, m.breakMs);
+      const tk = m.teamKills || [0, 0];
+      const hi = Math.max(tk[0], tk[1]), lo = Math.min(tk[0], tk[1]);
+      const txt = m.winTeam === -1 || m.winTeam == null
+        ? `ROUND OVER — DRAW ${tk[0]}–${tk[1]}`
+        : `ROUND OVER — ${teamName(m.winTeam)} WINS ${hi}–${lo}`;
+      showMsg(txt, m.breakMs);
       play('roundover', 0.9);
       sb.style.display = 'block'; renderScores();
       break;
@@ -526,7 +574,7 @@ function onMsg(m) {
       for (const mk of medkitMeshes) mk.visible = true;
       for (const r of remotes.values()) reviveRemote(r);
       pos.set(...m.spawn); vel.set(0, 0, 0);
-      if (me) me.rotation.x = 0;
+      if (me) { me.rotation.x = 0; resetAnim(me.userData.anim); }
       resetGun();
       roundEndsAt = m.roundEndsAt; serverOffset = m.now - Date.now();
       sb.style.display = 'none'; showMsg('ROUND START', 1500);
@@ -567,11 +615,16 @@ function hitmark() {
 }
 const esc = s => String(s).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
 function renderScores() {
-  const rows = [{ name: 'you', kills: myKills, deaths: myDeaths, me: true },
-    ...[...remotes.values()].map(r => ({ name: r.name, kills: r.kills, deaths: r.deaths }))]
-    .sort((a, b) => b.kills - a.kills);
-  sb.innerHTML = '<table><tr><th>player</th><th>K</th><th>D</th></tr>' +
-    rows.map(r => `<tr style="${r.me ? 'color:#7CFC00' : ''}"><td>${esc(r.name)}</td><td>${r.kills}</td><td>${r.deaths}</td></tr>`).join('') + '</table>';
+  const rows = [{ name: 'you', team: myTeam, kills: myKills, deaths: myDeaths, me: true },
+    ...[...remotes.values()].map(r => ({ name: r.name, team: r.team, kills: r.kills, deaths: r.deaths }))];
+  const tk = [0, 0]; for (const r of rows) tk[r.team] += r.kills;
+  rows.sort((a, b) => (a.team - b.team) || (b.kills - a.kills));
+  const head = `<div style="text-align:center;margin-bottom:10px;font-size:18px;font-weight:bold">` +
+    `<span style="color:${TEAM_HUD[0]}">${teamName(0)} ${tk[0]}</span>` +
+    `<span style="color:#8a8060"> — </span>` +
+    `<span style="color:${TEAM_HUD[1]}">${tk[1]} ${teamName(1)}</span></div>`;
+  sb.innerHTML = head + '<table><tr><th>player</th><th>K</th><th>D</th></tr>' +
+    rows.map(r => `<tr style="color:${TEAM_HUD[r.team]}${r.me ? ';font-weight:bold' : ''}"><td>${esc(r.name)}${r.me ? ' ◄' : ''}</td><td>${r.kills}</td><td>${r.deaths}</td></tr>`).join('') + '</table>';
 }
 
 // ---------- mouse aim (ground-plane raycast — no pointer lock in top-down) ----------
@@ -589,16 +642,15 @@ addEventListener('mousemove', e => {
 });
 function updateAim() {
   cursorRay.setFromCamera(mouseNDC, camera);
-  // aim assist: if the cursor is over an enemy, lock the shot to them
+  // aim assist: if the cursor is over a LIVE ENEMY, lock the shot to them
   aimTargetPid = 0;
   const targets = [];
-  for (const r of remotes.values()) if (!r.dead) targets.push(...r.group.children.filter(c => c.userData.pid));
+  for (const r of remotes.values()) if (!r.dead && r.team !== myTeam) targets.push(...r.aimMeshes);
   const hits = cursorRay.intersectObjects(targets, false);
   if (hits[0]) {
     aimTargetPid = hits[0].object.userData.pid;
-    const g = hits[0].object.parent;
-    aimPoint.set(g.position.x, pos.y, g.position.z);
-    aimTargetY = g.position.y + 1.0; // chest of the target
+    const g = remotes.get(aimTargetPid)?.group; // pid → group (legs nest under a pivot now)
+    if (g) { aimPoint.set(g.position.x, pos.y, g.position.z); aimTargetY = g.position.y + 1.0; }
   } else {
     aimPlane.constant = -pos.y;     // aim on my own ground level (kills tilt parallax)
     const p = new THREE.Vector3();
@@ -629,12 +681,27 @@ function resetGun() { // death mid-reload must not carry over to the next life
   clearTimeout(reloadT);
   ammo = 30; reloading = false; firing = false; spread = 0;
 }
-const raycaster = new THREE.Raycaster();
 function tracer(origin, dir, len = RANGE) {
   const geo = new THREE.BufferGeometry().setFromPoints([origin, origin.clone().addScaledVector(dir, len)]);
   const line = new THREE.Line(geo, new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.75 }));
   scene.add(line);
   setTimeout(() => { scene.remove(line); geo.dispose(); line.material.dispose(); }, 60);
+}
+// 2D ray-vs-AABB (slab method). Unit dir → returns entry distance, or Infinity if clear.
+// Origin sitting inside/at a box returns Infinity so a wall you're already past can't self-block.
+function rayRectT(ox, oz, dx, dz, r) {
+  let tmin = -Infinity, tmax = Infinity;
+  if (Math.abs(dx) < 1e-9) { if (ox < r.minX || ox > r.maxX) return Infinity; }
+  else { let t1 = (r.minX - ox) / dx, t2 = (r.maxX - ox) / dx; if (t1 > t2) { const t = t1; t1 = t2; t2 = t; } tmin = Math.max(tmin, t1); tmax = Math.min(tmax, t2); }
+  if (Math.abs(dz) < 1e-9) { if (oz < r.minZ || oz > r.maxZ) return Infinity; }
+  else { let t1 = (r.minZ - oz) / dz, t2 = (r.maxZ - oz) / dz; if (t1 > t2) { const t = t1; t1 = t2; t2 = t; } tmin = Math.max(tmin, t1); tmax = Math.min(tmax, t2); }
+  if (tmax < tmin || tmax < 0) return Infinity;
+  return tmin > 0 ? tmin : Infinity;
+}
+function nearestWallT(ox, oz, dx, dz) {
+  let best = Infinity;
+  for (const r of shotBlockers) { const t = rayRectT(ox, oz, dx, dz, r); if (t < best) best = t; }
+  return best;
 }
 function shoot(now) {
   if (dead || frozen || reloading || ammo <= 0 || SPECTATE) return;
@@ -643,35 +710,49 @@ function shoot(now) {
   lastShot = now; ammo--;
   if (ammo === 0) reload();
   spread = Math.min(Math.max(spread, baseSpread()) + 0.007, 0.05);
-  const origin = new THREE.Vector3(pos.x, pos.y + P.chest, pos.z);
-  // shot goes where the cursor points: enemy chest if hovering one, else flat
-  const target = aimTargetPid
-    ? new THREE.Vector3(aimPoint.x, aimTargetY + 0.2, aimPoint.z)
-    : new THREE.Vector3(aimPoint.x, origin.y, aimPoint.z);
-  const dir = target.sub(origin);
-  if (dir.lengthSq() < 0.01) dir.set(-Math.sin(yaw), 0, -Math.cos(yaw));
-  dir.normalize();
-  dir.x += (Math.random() - 0.5) * spread * 2;
-  dir.z += (Math.random() - 0.5) * spread * 2;
-  dir.normalize();
-  raycaster.set(origin, dir);
-  raycaster.far = RANGE;
-  const targets = [];
-  for (const [id, r] of remotes) if (!r.dead) targets.push(...r.group.children.filter(c => c.userData.pid));
-  const hitsP = raycaster.intersectObjects(targets, false);
-  const hitsW = raycaster.intersectObjects(worldMeshes, false);
-  const pHit = hitsP[0], wHit = hitsW[0];
-  if (pHit && (!wHit || pHit.distance < wHit.distance)) {
-    ws.send(JSON.stringify({ t: 'hit', target: pHit.object.userData.pid }));
-  } else if (wHit) {
-    // dust puff where the bullet lands
+  // pure top-down hitscan: everything resolves on the XZ plane, height is irrelevant
+  const ox = pos.x, oz = pos.z;
+  const ang = yaw + (Math.random() - 0.5) * spread * 2;
+  const nx = -Math.sin(ang), nz = -Math.cos(ang);      // forward unit (matches yaw)
+  const wallT = nearestWallT(ox, oz, nx, nz);
+  let hitId = 0, fdx = nx, fdz = nz, flen = Math.min(wallT, RANGE);
+
+  // aim-assist: cursor locked on an enemy → hit them if in range with clear 2D line of sight
+  const lock = aimTargetPid ? remotes.get(aimTargetPid) : null;
+  if (lock && !lock.dead && lock.team !== myTeam) {
+    const ex = lock.group.position.x - ox, ez = lock.group.position.z - oz;
+    const d = Math.hypot(ex, ez);
+    if (d > 0.01 && d <= RANGE && nearestWallT(ox, oz, ex / d, ez / d) >= d) {
+      hitId = aimTargetPid; fdx = ex / d; fdz = ez / d; flen = d;
+    }
+  }
+  // otherwise: nearest enemy whose 2D centre falls within the bullet corridor, before any wall
+  if (!hitId) {
+    const HIT_R = 0.75, reach = Math.min(wallT, RANGE);
+    let bestAlong = reach;
+    for (const [id, r] of remotes) {
+      if (r.dead || r.team === myTeam) continue;
+      const ex = r.group.position.x - ox, ez = r.group.position.z - oz;
+      const along = ex * nx + ez * nz;
+      if (along <= 0 || along > reach) continue;
+      if (Math.abs(ex * nz - ez * nx) > HIT_R) continue;  // perpendicular distance to ray
+      if (along < bestAlong) { bestAlong = along; hitId = id; }
+    }
+    if (hitId) flen = bestAlong;
+  }
+
+  if (hitId) {
+    ws.send(JSON.stringify({ t: 'hit', target: hitId }));
+  } else if (wallT < RANGE) {
     const m = new THREE.Mesh(partGeo, new THREE.MeshBasicMaterial({ color: 0xd9c79a }));
-    m.position.copy(wHit.point); m.scale.setScalar(1.8);
+    m.position.set(ox + nx * wallT, pos.y + P.chest, oz + nz * wallT); m.scale.setScalar(1.8);
     scene.add(m);
     parts.push({ m, life: 0.18, v: new THREE.Vector3(0, 0.6, 0) });
   }
-  ws.send(JSON.stringify({ t: 'shoot', o: origin.toArray(), d: dir.toArray() }));
-  tracer(origin.clone().addScaledVector(dir, 0.9), dir, Math.min(RANGE, (pHit || wHit)?.distance || RANGE));
+  const origin = new THREE.Vector3(ox, pos.y + P.chest, oz);
+  const flatDir = new THREE.Vector3(fdx, 0, fdz);
+  ws.send(JSON.stringify({ t: 'shoot', o: origin.toArray(), d: flatDir.toArray() }));
+  tracer(origin.clone().addScaledVector(flatDir, 0.9), flatDir, Math.max(0, flen - 0.9));
   shotSound();
   myMuzzle.visible = true;
   clearTimeout(myMuzzle.userData.t);
@@ -729,6 +810,7 @@ function tick(now) {
   requestAnimationFrame(tick);
   const dt = Math.min((now - lastT) / 1000, 0.05);
   lastT = now;
+  let myMoving = false;
 
   if (ws && !dead && !frozen && !SPECTATE) {
     // world-aligned WASD (camera never yaws: screen-up IS north)
@@ -752,8 +834,8 @@ function tick(now) {
     pos.z = Math.max(-72.5, Math.min(72.5, pos.z));
     updateAim();
     if (firing) shoot(now); else spread = Math.max(baseSpread(), spread - 0.12 * dt);
-    const moving = move.lengthSq() > 0 && onGround;
-    if (moving) { stepT += dt; if (stepT > 0.37) { stepT = 0; if (!play('step', 0.08, 0, 0.85 + Math.random() * 0.3)) shotSound(0.018); } } else stepT = 0;
+    myMoving = move.lengthSq() > 0 && onGround;
+    if (myMoving) { stepT += dt; if (stepT > 0.37) { stepT = 0; if (!play('step', 0.08, 0, 0.85 + Math.random() * 0.3)) shotSound(0.018); } } else stepT = 0;
   }
   updateParts(dt);
   for (const mk of medkitMeshes) {
@@ -766,6 +848,7 @@ function tick(now) {
   if (me) {
     me.position.set(pos.x, pos.y + (dead ? 0.2 : 0), pos.z); // lift corpse out of the floor
     if (!dead) me.rotation.y = yaw;
+    animateWalk(me.userData.anim, dt, myMoving && !dead);
     ring.position.set(pos.x, pos.y + 0.06, pos.z);
     ring.visible = !dead && !SPECTATE;
     const from = new THREE.Vector3(pos.x, pos.y + 1.1, pos.z);
@@ -801,6 +884,7 @@ function tick(now) {
       }
       continue;
     }
+    const prevX = r.group.position.x, prevZ = r.group.position.z;
     const b = r.buf;
     while (b.length > 2 && b[1].time <= renderTime) b.shift();
     if (b.length >= 2) {
@@ -814,6 +898,9 @@ function tick(now) {
       r.group.position.set(b[0].x, b[0].y, b[0].z);
       r.group.rotation.y = b[0].ry;
     }
+    // drive the walk cycle from how far the remote actually slid this frame
+    const moved = Math.hypot(r.group.position.x - prevX, r.group.position.z - prevZ);
+    animateWalk(r.group.userData.anim, dt, moved > 0.012);
   }
 
   // net send 20Hz
@@ -828,8 +915,12 @@ function tick(now) {
   if (!reloading) $('ammo').textContent = ammo + ' / ∞';
   $('crosshair').style.fontSize = Math.round(16 + spread * 500) + 'px'; // dynamic: shows your accuracy
   const left = Math.max(0, roundEndsAt - (Date.now() + serverOffset));
-  $('timer').textContent = `${Math.floor(left / 60000)}:${String(Math.floor(left % 60000 / 1000)).padStart(2, '0')}  |  K ${myKills} / D ${myDeaths}`;
-  $('timer').style.color = left <= 30000 && !frozen ? '#ff5544' : '#e8e0c8';
+  const tk = [0, 0]; tk[myTeam] += myKills; for (const r of remotes.values()) tk[r.team] += r.kills;
+  const time = `${Math.floor(left / 60000)}:${String(Math.floor(left % 60000 / 1000)).padStart(2, '0')}`;
+  const timeCol = left <= 15000 && !frozen ? '#ff5544' : '#e8e0c8';
+  $('timer').innerHTML = `<span style="color:${TEAM_HUD[0]}">${tk[0]}</span>` +
+    `&nbsp;&nbsp;<span style="color:${timeCol}">${time}</span>&nbsp;&nbsp;` +
+    `<span style="color:${TEAM_HUD[1]}">${tk[1]}</span>`;
   if (ws && !frozen && left > 0 && left <= 10000) {
     const s = Math.floor(left / 1000);
     if (s !== lastBeepSec) { lastBeepSec = s; blip(); }
