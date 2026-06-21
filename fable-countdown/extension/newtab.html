@@ -1,65 +1,181 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>до 22 июня</title>
-  <link rel="stylesheet" href="newtab.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>План W26</title>
+<style>
+  :root{
+    --ink:#1a1a1a; --cream:#faf8f3; --paper:#fdfbf6; --rule:#d8d2c4;
+    --rule-soft:#e7e1d4; --muted:#6b655a; --accent:#7a2218; --part:#9a6a12; --ok:#2f5e34;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--cream);color:var(--ink);
+    font-family:"PT Serif",Georgia,Charter,"Times New Roman",serif;
+    font-size:17px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  .mono{font-family:"PT Mono",ui-monospace,Menlo,monospace}
+  .wrap{padding:34px 40px 48px}
+  a{color:inherit}
+  /* header */
+  .eyebrow{font-family:ui-monospace,Menlo,monospace;font-size:.72rem;letter-spacing:.22em;
+    text-transform:uppercase;color:var(--accent);margin:0 0 .7em}
+  h1{font-weight:700;font-size:2.7rem;letter-spacing:-.01em;line-height:1.15;margin:0 0 .12em}
+  .sub{font-style:italic;color:var(--muted);font-size:1.08rem;margin:.1em 0 0}
+  .rule{border:0;border-top:2px solid var(--ink);margin:16px 0 26px}
+  .stats{display:flex;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);margin-bottom:30px}
+  .stat{padding:14px 18px;border-right:1px solid var(--rule-soft);flex:1}
+  .stat:last-child{border-right:0}
+  .stat b{display:block;font-size:1.8rem;font-weight:700;letter-spacing:-.02em;line-height:1.05}
+  .stat.acc b{color:var(--accent)}
+  .stat span{display:block;font-family:ui-monospace,Menlo,monospace;font-size:.64rem;
+    letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-top:7px}
+  /* section labels */
+  .lab{font-family:ui-monospace,Menlo,monospace;font-size:.72rem;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--accent);margin:0 0 4px}
+  .hint{font-size:.9rem;font-style:italic;color:var(--muted);margin:0 0 16px}
+  /* board */
+  .board{display:flex;gap:12px;overflow-x:auto;padding-bottom:12px;align-items:flex-start}
+  .col{width:210px;flex:0 0 auto}
+  .col-head{display:flex;align-items:baseline;justify-content:space-between;
+    border-bottom:2px solid var(--ink);padding-bottom:6px;margin-bottom:12px}
+  .col-head .d{font-weight:700;font-size:1rem}
+  .col-head .h{font-family:ui-monospace,Menlo,monospace;font-size:.7rem;color:var(--muted)}
+  .col.live .col-head{border-color:var(--accent)}
+  .col.live .col-head .d,.col.live .col-head .h{color:var(--accent);font-weight:700}
+  .card{display:block;border:1px solid var(--rule);border-radius:3px;background:var(--paper);
+    padding:8px 11px;margin-bottom:8px;text-decoration:none;color:var(--ink)}
+  .card:hover{border-color:var(--accent);box-shadow:0 1px 4px rgba(0,0,0,.06)}
+  .card b{display:block;font-weight:400;font-size:.86rem;line-height:1.3}
+  .card .m{display:block;font-family:ui-monospace,Menlo,monospace;font-size:.64rem;color:var(--muted);margin-top:4px}
+  .card.p0{border:2px solid rgba(122,34,24,.55)}
+  .card.p0 b{font-weight:700}
+  .card.vacant{border-style:dashed;border-color:var(--muted);background:var(--cream);color:var(--muted)}
+  .chip{border:1px solid rgba(122,34,24,.4);background:rgba(122,34,24,.05);border-radius:3px;
+    padding:5px 11px;margin-bottom:8px}
+  .chip span{font-family:ui-monospace,Menlo,monospace;font-size:.64rem;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--accent)}
+  /* focus */
+  .focus{margin-top:38px}
+  .focus ul{list-style:none;padding:0;margin:0}
+  .focus li{margin-bottom:8px;font-size:1rem}
+  .focus .r{color:var(--accent);font-weight:700}
+  .focus .y{color:var(--part);font-weight:700}
+  .focus .g{color:var(--ok);font-weight:700}
+  .rule-week{margin-top:22px;color:var(--ink)}
+  footer{margin-top:36px;border-top:1px solid var(--rule);padding-top:14px;
+    font-family:ui-monospace,Menlo,monospace;font-size:.7rem;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--muted)}
+</style>
 </head>
 <body>
-  <div class="vignette" aria-hidden="true"></div>
-  <div class="grain" aria-hidden="true"></div>
+<div class="wrap">
 
-  <div class="lifeline" aria-hidden="true">
-    <div class="lifeline-fill" id="lifeline"></div>
+  <p class="eyebrow">План недели · Кружок Вайбкодинга</p>
+  <h1>План&nbsp;W26</h1>
+  <p class="sub">Денежная неделя · $3000 кэш + 2-й движок (контент-деньги) · 22–28.06.2026</p>
+  <hr class="rule">
+
+  <div class="stats">
+    <div class="stat acc"><b>$3000</b><span>Цель кэша · floor $1500 · W24 $1320 · W25 $0</span></div>
+    <div class="stat"><b>~48ч</b><span>Founder-время · честно, с агент-оверхедом</span></div>
+    <div class="stat"><b>8</b><span>Outcomes O1–O8</span></div>
+    <div class="stat acc"><b>Пн·Ср·Чт</b><span>P0-дни · оплата · воркшоп · L3</span></div>
   </div>
 
-  <header class="frame-top">
-    <div class="brand">
-      <span class="brand-mark" aria-hidden="true"></span>
-      <span class="brand-name">FABLE&nbsp;5</span>
-      <span class="brand-sub">claude-fable-5</span>
+  <p class="lab">Канбан по дням · карточка → GitHub issue</p>
+  <p class="hint">🔴 = P0 (блокер $3000). Пунктир = Vacant (ждём внешнее). Чипы = календарные события. Карточки открывают issue в новой вкладке.</p>
+
+  <div class="board">
+
+    <div class="col">
+      <div class="col-head"><span class="d">Сб 20</span><span class="h">~3ч</span></div>
+      <a class="card" target="_blank" href="https://github.com/serejaris/corp-decks/issues/19"><b>Дека воркшопа</b><span class="m">corp-decks#19 · 2ч</span></a>
+      <a class="card" target="_blank" href="https://github.com/serejaris/hsl-mozg/issues/181"><b>Бриф мастер-списка лидов</b><span class="m">hsl-mozg#181 · 1ч</span></a>
     </div>
-    <div class="frame-top-right">
-      <div class="deadline-mark">до&nbsp;полуночи <span class="deadline-date">22.VI.2026</span></div>
-      <div class="limits" id="limits" hidden>
-        <div class="limit-row" id="limitSession">
-          <span class="limit-label">сессия&nbsp;5ч</span>
-          <span class="limit-bar"><span class="limit-fill"></span></span>
-          <span class="limit-pct"></span>
-          <span class="limit-reset"></span>
-        </div>
-        <div class="limit-row" id="limitWeek">
-          <span class="limit-label">неделя</span>
-          <span class="limit-bar"><span class="limit-fill"></span></span>
-          <span class="limit-pct"></span>
-          <span class="limit-reset"></span>
-        </div>
-      </div>
+
+    <div class="col">
+      <div class="col-head"><span class="d">Вс 21</span><span class="h">~5ч</span></div>
+      <a class="card" target="_blank" href="https://github.com/serejaris/corp-decks/issues/19"><b>Дека воркшопа</b><span class="m">corp-decks#19 · 2ч</span></a>
+      <a class="card" target="_blank" href="https://github.com/serejaris/hq/issues/225"><b>Контент-план по форматам</b><span class="m">hq#225 · 3ч</span></a>
     </div>
-  </header>
 
-  <main class="stage">
-    <p class="overline" id="overline">осталось</p>
+    <div class="col live">
+      <div class="col-head"><span class="d">Пн 22</span><span class="h">~9.5ч P0</span></div>
+      <div class="chip"><span>📅 Oleg 13:00 (grad)</span></div>
+      <a class="card vacant" target="_blank" href="https://github.com/serejaris/crm/issues/27"><b>⏳ Спортмастер: письмо Феди → переслать</b><span class="m">crm#27 · Vacant</span></a>
+      <a class="card p0" target="_blank" href="https://github.com/serejaris/hsl-mozg/issues/181"><b>🔴 R1 оплата картой (Точка+зарубеж+USDT)</b><span class="m">hsl-mozg#181 · P0 + E2E</span></a>
+      <a class="card p0" target="_blank" href="https://github.com/serejaris/hsl-mozg/issues/173"><b>🔴 Оповестить 43 регистранта + дата 17→24</b><span class="m">hsl-mozg#173</span></a>
+      <a class="card" target="_blank" href="https://github.com/serejaris/teach-vibecoding/issues/358"><b>PC1 L8: ссылка LMS в чат</b><span class="m">tv#358 · закрытие PC1</span></a>
+      <a class="card" target="_blank" href="https://github.com/serejaris/crm/issues/73"><b>Ответ Насте (да в принципе)</b><span class="m">crm#73</span></a>
+      <a class="card" target="_blank" href="https://github.com/serejaris/corp-decks/issues/19"><b>Дека воркшопа</b><span class="m">corp-decks#19 · 2ч</span></a>
+      <a class="card" target="_blank" href="https://github.com/serejaris/hsl-mozg/issues/181"><b>Cash · 10 DM</b><span class="m">hsl-mozg#181 · 1.7ч</span></a>
+      <a class="card" target="_blank" href="https://github.com/serejaris/corp-youtube/issues/25"><b>Медиакит EN+RU</b><span class="m">corp-youtube#25 · 2ч</span></a>
+      <a class="card" target="_blank" href="https://github.com/serejaris/corp-youtube/issues/33"><b>GLM-письмо (сразу)</b><span class="m">corp-youtube#33 · 0.5ч</span></a>
+      <a class="card" target="_blank" href="https://github.com/serejaris/hq/issues/225"><b>Пост @ris_ai</b><span class="m">hq#225 · 0.5ч</span></a>
+    </div>
 
-    <button class="counter" id="counter" title="нажми — сменить единицу времени">
-      <span class="counter-value" id="counterValue"></span>
-      <span class="counter-unit" id="counterUnit"></span>
-    </button>
+    <div class="col">
+      <div class="col-head"><span class="d">Вт 23</span><span class="h">~6.7ч</span></div>
+      <a class="card" target="_blank" href="https://github.com/serejaris/corp-decks/issues/19"><b>Дека <i>(финал, готова)</i></b><span class="m">corp-decks#19 · 2ч</span></a>
+      <a class="card p0" target="_blank" href="https://github.com/serejaris/teach-vibecoding/issues/360"><b>🔴 PC2 лендинг sign-off (до Ср)</b><span class="m">tv#360 · Иван ждёт</span></a>
+      <a class="card" target="_blank" href="https://github.com/serejaris/hsl-mozg/issues/181"><b>Cash · 10 DM</b><span class="m">hsl-mozg#181 · 1.7ч</span></a>
+      <a class="card" target="_blank" href="https://github.com/serejaris/hq/issues/236"><b>Кружок #13 setup (Точка+TG)</b><span class="m">hq#236 · 2ч</span></a>
+      <a class="card" target="_blank" href="https://github.com/serejaris/corp-youtube/issues/33"><b>Outbound аутрич</b><span class="m">corp-youtube#33 · 0.5ч</span></a>
+      <a class="card" target="_blank" href="https://github.com/serejaris/hq/issues/225"><b>Пост @ris_ai</b><span class="m">hq#225 · 0.5ч</span></a>
+    </div>
 
-    <p class="clock" id="clock" aria-live="off"></p>
+    <div class="col live">
+      <div class="col-head"><span class="d">Ср 24</span><span class="h">~9ч</span></div>
+      <div class="chip"><span>📅 Воркшоп 13:00</span></div>
+      <div class="chip"><span>📅 Hrebtenko 16:00</span></div>
+      <a class="card p0" target="_blank" href="https://github.com/serejaris/hq/issues/204"><b>Воркшоп-конверт (эфир+пост+доработка)</b><span class="m">hq#204 · 5.5ч</span></a>
+      <a class="card" target="_blank" href="https://github.com/serejaris/hsl-mozg/issues/181"><b>Cash · DM</b><span class="m">hsl-mozg#181 · 1.7ч</span></a>
+      <a class="card" target="_blank" href="https://github.com/serejaris/hq/issues/236"><b>Кружок #13 ревью + E2E</b><span class="m">hq#236 · 0.5ч</span></a>
+      <a class="card" target="_blank" href="https://github.com/serejaris/corp-youtube/issues/33"><b>Outbound аутрич</b><span class="m">corp-youtube#33 · 0.5ч</span></a>
+    </div>
 
-    <section class="embers" aria-label="оставшиеся часы">
-      <p class="embers-caption"><span id="embersLeft"></span> — каждая точка — один час с&nbsp;ней</p>
-      <div class="embers-grid" id="embersGrid"></div>
-    </section>
-  </main>
+    <div class="col live">
+      <div class="col-head"><span class="d">Чт 25</span><span class="h">~9.7ч</span></div>
+      <div class="chip"><span>📅 Кружок L3 13:00</span></div>
+      <a class="card p0" target="_blank" href="https://github.com/serejaris/teach-vibecoding/issues/332"><b>L3-конверт (prep+эфир+пост+доработка)</b><span class="m">tv#332 · 6.5ч</span></a>
+      <a class="card p0" target="_blank" href="https://github.com/serejaris/teach-vibecoding/issues/332"><b>🔴 Zoom: погасить/OBS до L3</b><span class="m">tv#332 · иначе запись потеряна</span></a>
+      <a class="card" target="_blank" href="https://github.com/serejaris/hsl-mozg/issues/181"><b>Cash · DM</b><span class="m">hsl-mozg#181 · 1.7ч</span></a>
+      <a class="card" target="_blank" href="https://github.com/serejaris/corp-hackathon/issues/3"><b>Анонс хакатона</b><span class="m">corp-hackathon#3 · 1ч</span></a>
+      <a class="card" target="_blank" href="https://github.com/serejaris/corp-youtube/issues/33"><b>Outbound аутрич</b><span class="m">corp-youtube#33 · 0.5ч</span></a>
+    </div>
 
-  <footer class="frame-bottom">
-    <p class="epigraph" id="epigraph"></p>
-    <p class="nudge" id="nudge"></p>
-  </footer>
+    <div class="col">
+      <div class="col-head"><span class="d">Пт 26</span><span class="h">~2.7ч</span></div>
+      <a class="card" target="_blank" href="https://github.com/serejaris/hsl-mozg/issues/181"><b>Cash жёсткий дожим (early-bird 23:59)</b><span class="m">hsl-mozg#181 · 1.7ч</span></a>
+      <a class="card" target="_blank" href="https://github.com/serejaris/corp-youtube/issues/33"><b>Outbound аутрич</b><span class="m">corp-youtube#33 · 0.5ч</span></a>
+      <a class="card" target="_blank" href="https://github.com/serejaris/hq/issues/225"><b>Пост @ris_ai</b><span class="m">hq#225 · 0.5ч</span></a>
+    </div>
 
-  <script src="newtab.js"></script>
+    <div class="col">
+      <div class="col-head"><span class="d">Сб 27</span><span class="h">~1ч</span></div>
+      <a class="card" target="_blank" href="https://github.com/serejaris/hsl-mozg/issues/181"><b>Дожим хвостов кэша</b><span class="m">hsl-mozg#181 · 0.5ч</span></a>
+      <a class="card" target="_blank" href="https://github.com/serejaris/hq/issues/225"><b>Буфер контента</b><span class="m">hq#225</span></a>
+    </div>
+
+    <div class="col">
+      <div class="col-head"><span class="d">Вс 28</span><span class="h">~1ч</span></div>
+      <a class="card" target="_blank" href="https://github.com/serejaris/hq/issues/238"><b>Cash-readout ($3000?) + подготовка к ретро</b><span class="m">hq#238 · 1ч</span></a>
+    </div>
+
+  </div>
+
+  <div class="focus">
+    <p class="lab">Фокус-слои (защита $3000)</p>
+    <ul>
+      <li><span class="r">🔴 Не режется:</span> R1 оплата картой · оповестить регистрантов · воркшоп Ср + дожим · Кружок L3 Чт · ежедневный cash-блок · медиакит.</li>
+      <li><span class="y">🟡 Гибкое:</span> outbound (кроме GLM) · анонс хакатона · ежедневный пост · Twitter · GPT 5.6 pre-script.</li>
+      <li><span class="g">🟢 Agent + твой бриф/ревью:</span> контент-пайплайн · Кружок #13 бот+страница (Codex) · трекинг оплат + follow-up.</li>
+    </ul>
+    <p class="rule-week"><b>Правило недели:</b> упёрся по времени — режешь 🟡, <b>$3000 (O1) не трогаем.</b></p>
+  </div>
+
+  <footer>План W26 · canonical: 0_hq/retros/W26-outcomes.md · полная версия: retros/W26-plan.html</footer>
+
+</div>
 </body>
 </html>

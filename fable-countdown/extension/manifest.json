@@ -1,12 +1,11 @@
 {
   "manifest_version": 3,
-  "name": "Fable Countdown — до 22 июня",
-  "version": "1.0.0",
-  "description": "Каждый новый таб — напоминание: Fable 5 уходит из подписки 22 июня. Время ещё есть.",
+  "name": "План W26 — новый таб",
+  "version": "1.1.0",
+  "description": "Новый таб = план недели W26: канбан со ссылками на задачи GitHub.",
   "chrome_url_overrides": {
     "newtab": "newtab.html"
   },
-  "host_permissions": ["http://127.0.0.1:46123/*"],
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
