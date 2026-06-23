@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>План W26</title>
+<title>HQ Dashboard</title>
 <style>
   :root{
     --ink:#1a1a1a; --cream:#faf8f3; --paper:#fdfbf6; --rule:#d8d2c4;
@@ -16,7 +16,6 @@
   .mono{font-family:"PT Mono",ui-monospace,Menlo,monospace}
   .wrap{padding:34px 40px 48px}
   a{color:inherit}
-  /* header */
   .eyebrow{font-family:ui-monospace,Menlo,monospace;font-size:.72rem;letter-spacing:.22em;
     text-transform:uppercase;color:var(--accent);margin:0 0 .7em}
   h1{font-weight:700;font-size:2.7rem;letter-spacing:-.01em;line-height:1.15;margin:0 0 .12em}
@@ -29,11 +28,9 @@
   .stat.acc b{color:var(--accent)}
   .stat span{display:block;font-family:ui-monospace,Menlo,monospace;font-size:.64rem;
     letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-top:7px}
-  /* section labels */
   .lab{font-family:ui-monospace,Menlo,monospace;font-size:.72rem;letter-spacing:.18em;
     text-transform:uppercase;color:var(--accent);margin:0 0 4px}
   .hint{font-size:.9rem;font-style:italic;color:var(--muted);margin:0 0 16px}
-  /* board */
   .board{display:flex;gap:12px;overflow-x:auto;padding-bottom:12px;align-items:flex-start}
   .col{width:210px;flex:0 0 auto}
   .col-head{display:flex;align-items:baseline;justify-content:space-between;
@@ -54,7 +51,16 @@
     padding:5px 11px;margin-bottom:8px}
   .chip span{font-family:ui-monospace,Menlo,monospace;font-size:.64rem;letter-spacing:.08em;
     text-transform:uppercase;color:var(--accent)}
-  /* focus */
+  /* closed: что реально закрыто в этот день — компактно, под планом */
+  .closed{margin-top:14px;border-top:1px dashed var(--rule);padding-top:9px}
+  .closed-lab{font-family:ui-monospace,Menlo,monospace;font-size:.6rem;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--ok);margin-bottom:7px}
+  .closed-item{display:block;text-decoration:none;color:var(--muted);font-size:.74rem;
+    line-height:1.3;margin-bottom:6px;padding-left:14px;position:relative}
+  .closed-item::before{content:"\2713";position:absolute;left:0;top:0;color:var(--ok);font-size:.7rem}
+  .closed-item:hover{color:var(--ink)}
+  .closed-item em{font-family:ui-monospace,Menlo,monospace;font-style:normal;
+    font-size:.58rem;color:var(--ok);opacity:.8;white-space:nowrap}
   .focus{margin-top:38px}
   .focus ul{list-style:none;padding:0;margin:0}
   .focus li{margin-bottom:8px;font-size:1rem}
@@ -62,9 +68,6 @@
   .focus .y{color:var(--part);font-weight:700}
   .focus .g{color:var(--ok);font-weight:700}
   .rule-week{margin-top:22px;color:var(--ink)}
-  footer{margin-top:36px;border-top:1px solid var(--rule);padding-top:14px;
-    font-family:ui-monospace,Menlo,monospace;font-size:.7rem;letter-spacing:.1em;
-    text-transform:uppercase;color:var(--muted)}
 </style>
 </head>
 <body>
@@ -76,14 +79,14 @@
   <hr class="rule">
 
   <div class="stats">
-    <div class="stat acc"><b>$3000</b><span>Цель кэша · floor $1500 · W24 $1320 · W25 $0</span></div>
+    <div class="stat acc"><b>$500 / $3000</b><span>Кэш W26 · $500 пришло пн 22.06 · осталось $2500</span></div>
     <div class="stat"><b>~48ч</b><span>Founder-время · честно, с агент-оверхедом</span></div>
     <div class="stat"><b>8</b><span>Outcomes O1–O8</span></div>
-    <div class="stat acc"><b>Пн·Ср·Чт</b><span>P0-дни · оплата · воркшоп · L3</span></div>
+    <div class="stat acc"><b>Вт·Ср·Чт</b><span>P0-дни · оплата · воркшоп · L3</span></div>
   </div>
 
   <p class="lab">Канбан по дням · карточка → GitHub issue</p>
-  <p class="hint">🔴 = P0 (блокер $3000). Пунктир = Vacant (ждём внешнее). Чипы = календарные события. Карточки открывают issue в новой вкладке.</p>
+  <p class="hint">🔴 = P0 (блокер $3000). Пунктир = Vacant (ждём внешнее). Чипы = календарные события. Внизу дня (✓, мельче) — что реально закрыто.</p>
 
   <div class="board">
 
@@ -91,19 +94,44 @@
       <div class="col-head"><span class="d">Сб 20</span><span class="h">~3ч</span></div>
       <a class="card" target="_blank" href="https://github.com/serejaris/corp-decks/issues/19"><b>Дека воркшопа</b><span class="m">corp-decks#19 · 2ч</span></a>
       <a class="card" target="_blank" href="https://github.com/serejaris/hsl-mozg/issues/181"><b>Бриф мастер-списка лидов</b><span class="m">hsl-mozg#181 · 1ч</span></a>
+      <div class="closed">
+        <div class="closed-lab">✓ закрыто 13</div>
+        <a class="closed-item" target="_blank" href="https://github.com/serejaris/teach-vibecoding/issues/357">Personal Corp поток 1 — закрывающее сообщение в чат (спасибо + напоминания) <em>tv#357</em></a>
+        <a class="closed-item" target="_blank" href="https://github.com/serejaris/teach-vibecoding/issues/322">Personal Corp — собрать и разослать финальный опросник <em>tv#322</em></a>
+        <a class="closed-item" target="_blank" href="https://github.com/serejaris/teach-vibecoding/issues/358">Personal Corp L8 — запись в LMS: проверить доступ и отдать ссылку потоку (сегодня) <em>tv#358</em></a>
+        <a class="closed-item" target="_blank" href="https://github.com/serejaris/teach-vibecoding/issues/343">Кружок #12 L2 — выкладка записи: video_id, LMS-страница, пост в канал <em>tv#343</em></a>
+        <a class="closed-item" target="_blank" href="https://github.com/serejaris/corp-family-budget/issues/5">Семейный бюджет-бот @claudich_bot — перевод на Hermes-gateway (Railway) + ledger git-sync <em>cfb#5</em></a>
+        <a class="closed-item" target="_blank" href="https://github.com/serejaris/teach-personal-corp/issues/59">Personal Corp L8 — пост-продакшн: запись, транскрипт, workbook <em>tpc#59</em></a>
+        <a class="closed-item" target="_blank" href="https://github.com/serejaris/teach-personal-corp/issues/58">Personal Corp L7 — пост-продакшн: запись, транскрипт, workbook <em>tpc#58</em></a>
+        <a class="closed-item" target="_blank" href="https://github.com/serejaris/corp-family-budget/issues/4">Семейный бюджет-бот @claudich_bot — LLM на Claude-подписку (claude -p Sonnet) вместо DeepSeek <em>cfb#4</em></a>
+        <a class="closed-item" target="_blank" href="https://github.com/serejaris/tg-telethon/issues/11">infra: tg-telethon — full DM coverage + DM/group separation <em>tg-telethon#11</em></a>
+        <a class="closed-item" target="_blank" href="https://github.com/serejaris/corp-team/issues/9">@podznak_tg (Иван) — разговор про роль в экосистеме (skill-contributor / контент) (W25) <em>corp-team#9</em></a>
+        <a class="closed-item" target="_blank" href="https://github.com/serejaris/corp-server/issues/18">Семейный бюджет-бот @claudich_bot — отдельный CT на corp-server (перенос с claude.ai) <em>srv#18</em></a>
+        <a class="closed-item" target="_blank" href="https://github.com/serejaris/corp-family-budget/issues/3">Семейный бюджет-бот @claudich_bot — восстановить Telegram-учёт расходов (встал 10.05) <em>cfb#3</em></a>
+        <a class="closed-item" target="_blank" href="https://github.com/serejaris/corp-community/issues/39">Бесплатный воркшоп @vibecod3rs — ср 24.06: наполнение + воронка (W25) <em>comm#39</em></a>
+      </div>
     </div>
 
     <div class="col">
       <div class="col-head"><span class="d">Вс 21</span><span class="h">~5ч</span></div>
       <a class="card" target="_blank" href="https://github.com/serejaris/corp-decks/issues/19"><b>Дека воркшопа</b><span class="m">corp-decks#19 · 2ч</span></a>
-      <a class="card" target="_blank" href="https://github.com/serejaris/hq/issues/225"><b>Контент-план по форматам</b><span class="m">hq#225 · 3ч</span></a>
+      <a class="card" target="_blank" href="https://github.com/serejaris/corp-content/issues/7"><b>Контент-план по форматам</b><span class="m">corp-content#7 · 3ч</span></a>
+      <div class="closed">
+        <div class="closed-lab">✓ закрыто 6</div>
+        <a class="closed-item" target="_blank" href="https://github.com/serejaris/hsl-mozg/issues/220">Кружок #13 — post-payment сообщения: дата инвайта и ссылки доступа (W26) <em>hsl-mozg#220</em></a>
+        <a class="closed-item" target="_blank" href="https://github.com/serejaris/hsl-mozg/issues/217">Кружок #13 — оплата картой/СБП: убрать legacy TBank экран перед Точкой (W25) <em>hsl-mozg#217</em></a>
+        <a class="closed-item" target="_blank" href="https://github.com/serejaris/hsl-mozg/issues/221">Кружок #13 — Telegram-канал, чат, папка и intro-пост доступа (W25) <em>hsl-mozg#221</em></a>
+        <a class="closed-item" target="_blank" href="https://github.com/serejaris/hq/issues/240">Синк протухших поверхностей под поток #13 (16 июля, 19 900 ₽) <em>hq#240</em></a>
+        <a class="closed-item" target="_blank" href="https://github.com/serejaris/hsl-mozg/issues/219">Обновить тексты уроков под сетку потока #12 (тизеры + урок 3) <em>hsl-mozg#219</em></a>
+        <a class="closed-item" target="_blank" href="https://github.com/serejaris/hq/issues/238">Ретро W25 + планирование W26 — провести (ops) <em>hq#238</em></a>
+      </div>
     </div>
 
-    <div class="col live">
-      <div class="col-head"><span class="d">Пн 22</span><span class="h">~9.5ч P0</span></div>
+    <div class="col">
+      <div class="col-head"><span class="d">Пн 22</span><span class="h">cash +$500</span></div>
       <div class="chip"><span>📅 Oleg 13:00 (grad)</span></div>
-      <a class="card vacant" target="_blank" href="https://github.com/serejaris/crm/issues/27"><b>⏳ Спортмастер: письмо Феди → переслать</b><span class="m">crm#27 · Vacant</span></a>
-      <a class="card p0" target="_blank" href="https://github.com/serejaris/hsl-mozg/issues/181"><b>🔴 R1 оплата картой (Точка+зарубеж+USDT)</b><span class="m">hsl-mozg#181 · P0 + E2E</span></a>
+      <a class="card" target="_blank" href="https://github.com/serejaris/crm/issues/74"><b>Спортмастер: доппакет отправлен, ждём подтверждение</b><span class="m">crm#74 · In progress</span></a>
+      <a class="card p0" target="_blank" href="https://github.com/serejaris/hsl-mozg/issues/181"><b>🔴 PC2 оплата: 1 sale есть, live-bot E2E остался</b><span class="m">hsl-mozg#181 · +$500 · Ready</span></a>
       <a class="card p0" target="_blank" href="https://github.com/serejaris/hsl-mozg/issues/173"><b>🔴 Оповестить 43 регистранта + дата 17→24</b><span class="m">hsl-mozg#173</span></a>
       <a class="card" target="_blank" href="https://github.com/serejaris/crm/issues/73"><b>Ответ Насте (да в принципе)</b><span class="m">crm#73</span></a>
       <a class="card" target="_blank" href="https://github.com/serejaris/teach-vibecoding/issues/332"><b>L3-преза (лёгкий старт)</b><span class="m">tv#332 · 0.5ч</span></a>
@@ -111,18 +139,27 @@
       <a class="card" target="_blank" href="https://github.com/serejaris/hsl-mozg/issues/181"><b>Cash · 10 DM</b><span class="m">hsl-mozg#181 · 1.7ч</span></a>
       <a class="card" target="_blank" href="https://github.com/serejaris/corp-youtube/issues/25"><b>Медиакит EN+RU</b><span class="m">corp-youtube#25 · 2ч</span></a>
       <a class="card" target="_blank" href="https://github.com/serejaris/corp-youtube/issues/33"><b>GLM-письмо (сразу)</b><span class="m">corp-youtube#33 · 0.5ч</span></a>
-      <a class="card" target="_blank" href="https://github.com/serejaris/hq/issues/225"><b>Пост @ris_ai</b><span class="m">hq#225 · 0.5ч</span></a>
+      <a class="card" target="_blank" href="https://github.com/serejaris/corp-content/issues/7"><b>Пост @ris_ai</b><span class="m">corp-content#7 · 0.5ч</span></a>
+      <div class="closed">
+        <div class="closed-lab">✓ закрыто / факт 4</div>
+        <a class="closed-item" target="_blank" href="https://github.com/serejaris/hsl-mozg/issues/181">Первая продажа PC2: Никита Куимов, early-bird 39 000 ₽ / $500, Точка checkout <em>hsl#181</em></a>
+        <a class="closed-item" target="_blank" href="https://github.com/serejaris/crm/issues/27">Sportmaster: ФНС PDF + справка Точки + пояснение по штатке отправлены в Gmail <em>crm#27</em></a>
+        <a class="closed-item" target="_blank" href="https://github.com/serejaris/teach-vibecoding/issues/365">KB концепт-стор — repoint на канон KB/concepts + единый kb-enrich <em>tv#365</em></a>
+        <a class="closed-item" target="_blank" href="https://github.com/serejaris/hsl-mozg/issues/227">Бот-продюсер — авторассылка ДЗ в группу (Lesson.homework) <em>hsl#227</em></a>
+      </div>
     </div>
 
-    <div class="col">
-      <div class="col-head"><span class="d">Вт 23</span><span class="h">~6.7ч</span></div>
-      <a class="card" target="_blank" href="https://github.com/serejaris/corp-decks/issues/19"><b>Дека <i>(финал, готова)</i></b><span class="m">corp-decks#19 · 2ч</span></a>
-      <a class="card p0" target="_blank" href="https://github.com/serejaris/teach-vibecoding/issues/360"><b>🔴 PC2 лендинг: проверить+затестить финалку</b><span class="m">tv#360 · Иван шлёт Вт вечер</span></a>
-      <a class="card" target="_blank" href="https://github.com/serejaris/hsl-mozg/issues/181"><b>Cash · 10 DM</b><span class="m">hsl-mozg#181 · 1.7ч</span></a>
-      <a class="card" target="_blank" href="https://github.com/serejaris/hq/issues/236"><b>Кружок #13 setup (Точка+TG)</b><span class="m">hq#236 · 2ч</span></a>
-      <a class="card" target="_blank" href="https://github.com/serejaris/teach-vibecoding/issues/332"><b>L3-преза (основное)</b><span class="m">tv#332 · 1.5ч</span></a>
-      <a class="card" target="_blank" href="https://github.com/serejaris/corp-youtube/issues/33"><b>Outbound аутрич</b><span class="m">corp-youtube#33 · 0.5ч</span></a>
-      <a class="card" target="_blank" href="https://github.com/serejaris/hq/issues/225"><b>Пост @ris_ai</b><span class="m">hq#225 · 0.5ч</span></a>
+    <div class="col live">
+      <div class="col-head"><span class="d">Вт 23</span><span class="h">проверено</span></div>
+      <a class="card p0" target="_blank" href="https://github.com/serejaris/hq/issues/204"><b>🔴 Воркшоп PC 24.06: тайминг, роли, хвосты</b><span class="m">hq#204 · Open</span></a>
+      <a class="card p0" target="_blank" href="https://github.com/serejaris/corp-decks/issues/19"><b>🔴 Дека воркшопа: финальная версия</b><span class="m">corp-decks#19 · Open</span></a>
+      <a class="card p0" target="_blank" href="https://github.com/serejaris/hsl-mozg/issues/181"><b>🔴 PC2 оплата: live-bot E2E до кнопки</b><span class="m">hsl-mozg#181 · Open</span></a>
+      <a class="card" target="_blank" href="https://github.com/serejaris/hsl-mozg/issues/206"><b>Напоминания + follow-up к воркшопу</b><span class="m">hsl-mozg#206 · Open</span></a>
+      <div class="closed">
+        <div class="closed-lab">✓ закрыто / факт 2</div>
+        <a class="closed-item" target="_blank" href="https://github.com/serejaris/crm/issues/73">Ответ Насте отправлен (clarify-first, 3 вопроса) — мяч у Насти, решение после деталей <em>crm#73</em></a>
+        <a class="closed-item" target="_blank" href="https://github.com/serejaris/corp-team/issues/11">Синк с Василисой: дизайн аккаунта зафиксирован — один аккаунт, прогрев ~2 нед, бот делает первый дожим <em>corp-team#11</em></a>
+      </div>
     </div>
 
     <div class="col live">
@@ -150,18 +187,18 @@
       <div class="col-head"><span class="d">Пт 26</span><span class="h">~2.7ч</span></div>
       <a class="card" target="_blank" href="https://github.com/serejaris/hsl-mozg/issues/181"><b>Cash жёсткий дожим (early-bird 23:59)</b><span class="m">hsl-mozg#181 · 1.7ч</span></a>
       <a class="card" target="_blank" href="https://github.com/serejaris/corp-youtube/issues/33"><b>Outbound аутрич</b><span class="m">corp-youtube#33 · 0.5ч</span></a>
-      <a class="card" target="_blank" href="https://github.com/serejaris/hq/issues/225"><b>Пост @ris_ai</b><span class="m">hq#225 · 0.5ч</span></a>
+      <a class="card" target="_blank" href="https://github.com/serejaris/corp-content/issues/7"><b>Пост @ris_ai</b><span class="m">corp-content#7 · 0.5ч</span></a>
     </div>
 
     <div class="col">
       <div class="col-head"><span class="d">Сб 27</span><span class="h">~1ч</span></div>
       <a class="card" target="_blank" href="https://github.com/serejaris/hsl-mozg/issues/181"><b>Дожим хвостов кэша</b><span class="m">hsl-mozg#181 · 0.5ч</span></a>
-      <a class="card" target="_blank" href="https://github.com/serejaris/hq/issues/225"><b>Буфер контента</b><span class="m">hq#225</span></a>
+      <a class="card" target="_blank" href="https://github.com/serejaris/corp-content/issues/7"><b>Буфер контента</b><span class="m">corp-content#7</span></a>
     </div>
 
     <div class="col">
       <div class="col-head"><span class="d">Вс 28</span><span class="h">~1ч</span></div>
-      <a class="card" target="_blank" href="https://github.com/serejaris/hq/issues/238"><b>Cash-readout ($3000?) + подготовка к ретро</b><span class="m">hq#238 · 1ч</span></a>
+      <a class="card" target="_blank" href="https://github.com/serejaris/hq/issues/238"><b>Cash-readout ($3000?) + подготовка к ретро</b><span class="m">ретро W26 · issue заведётся в вс · 1ч</span></a>
     </div>
 
   </div>
@@ -175,8 +212,6 @@
     </ul>
     <p class="rule-week"><b>Правило недели:</b> упёрся по времени — режешь 🟡, <b>$3000 (O1) не трогаем.</b></p>
   </div>
-
-  <footer>План W26 · canonical: 0_hq/retros/W26-outcomes.md · полная версия: retros/W26-plan.html</footer>
 
 </div>
 </body>
