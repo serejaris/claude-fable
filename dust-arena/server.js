@@ -13,12 +13,23 @@ const MAX_HP = 100;
 const MEDKIT_HEAL = 50;
 const MEDKIT_RESPAWN_MS = 25000;
 const SPAWN_PROT_MS = 1500;
-const HIT_DMG = 18;            // flat, top-down has no headshots (6 hits to kill)
+// weapon table — single source of truth for dmg/fireMs/range/mag. id = index, id 0 = default spawn (not a pickup).
+const WEAPONS = [
+  { id: 0, name: 'rifle',   dmg: 18,  fireMs: 110,  range: 40, mag: 30  },
+  { id: 1, name: 'smg',     dmg: 12,  fireMs: 70,   range: 30, mag: 40  },
+  { id: 2, name: 'deagle',  dmg: 50,  fireMs: 350,  range: 36, mag: 7   },
+  { id: 3, name: 'shotgun', dmg: 65,  fireMs: 650,  range: 14, mag: 6   },
+  { id: 4, name: 'awp',     dmg: 100, fireMs: 1500, range: 62, mag: 5   },
+  { id: 5, name: 'lmg',     dmg: 16,  fireMs: 90,   range: 38, mag: 100 },
+];
+const WEAPON_RESPAWN_MS = 20000;
+const RANGE_SLACK = 6; // дальность hit-чека = wpn.range + slack (запас на движение с прошлого state)
 
 // single source of truth — same file the client renders (map v3, gen_map.py)
 const MAP = JSON.parse(fs.readFileSync(path.join(__dirname, 'public', 'map.json'), 'utf8'));
 const MEDKITS = MAP.medkits;   // [x, z]
 const SPAWNS = MAP.spawns;     // [x, y, z] — first half = T (south +1.5 plateau), second = CT (north)
+const WEAPON_SPAWNS = MAP.weaponSpawns || []; // [{x, z, w}] — 5 pickup points, w = 1..5
 
 // teams: 0 = T (warm), 1 = CT (cool). spawns split T/CT, colors shaded so teammates differ.
 const HALF = Math.floor(SPAWNS.length / 2);
@@ -62,6 +73,7 @@ function getRoom(name) {
       breakUntil: 0,
       nextTeam: 0,        // tie-break toggle for balanced team assignment
       medkits: MEDKITS.map(() => ({ downUntil: 0 })),
+      weapons: WEAPON_SPAWNS.map(() => ({ downUntil: 0 })),
     };
     rooms.set(name, room);
   }
@@ -105,7 +117,7 @@ function publicPlayer(p) {
   return {
     id: p.id, name: p.name, color: p.color, team: p.team,
     x: p.x, y: p.y, z: p.z, ry: p.ry, rx: p.rx,
-    hp: p.hp, kills: p.kills, deaths: p.deaths, dead: p.dead,
+    hp: p.hp, kills: p.kills, deaths: p.deaths, dead: p.dead, w: p.w,
   };
 }
 
@@ -134,6 +146,8 @@ wss.on('connection', (ws) => {
           t: 'init', id: 0, spawn: [0, 0, 0],
           players: [...room.players.values()].map(publicPlayer),
           medkits: room.medkits.map(m => m.downUntil > Date.now() ? 0 : 1),
+          weaponSpawns: WEAPON_SPAWNS.map(s => ({ x: s.x, z: s.z, w: s.w })),
+          weapons: room.weapons.map(m => m.downUntil > Date.now() ? 0 : 1),
           roundEndsAt: room.roundEndsAt, now: Date.now(),
           frozen: room.breakUntil > Date.now(),
         }));
@@ -148,6 +162,7 @@ wss.on('connection', (ws) => {
         x: sx, y: sy, z: sz, ry: 0, rx: 0,
         hp: MAX_HP, kills: 0, deaths: 0, dead: false,
         protUntil: Date.now() + SPAWN_PROT_MS,
+        w: 0,
       };
       room.players.set(player.id, player);
       room.sockets.set(player.id, ws);
@@ -155,6 +170,8 @@ wss.on('connection', (ws) => {
         t: 'init', id: player.id, spawn: [sx, sy, sz],
         players: [...room.players.values()].map(publicPlayer),
         medkits: room.medkits.map(m => m.downUntil > Date.now() ? 0 : 1),
+        weaponSpawns: WEAPON_SPAWNS.map(s => ({ x: s.x, z: s.z, w: s.w })),
+        weapons: room.weapons.map(m => m.downUntil > Date.now() ? 0 : 1),
         roundEndsAt: room.roundEndsAt, now: Date.now(),
         frozen: room.breakUntil > Date.now(),
       }));
@@ -187,6 +204,19 @@ wss.on('connection', (ws) => {
             }
           }
         }
+        if (!(room.breakUntil > Date.now())) {
+          for (let i = 0; i < WEAPON_SPAWNS.length; i++) {
+            const mk = room.weapons[i];
+            if (!mk || mk.downUntil) continue;
+            const dx = player.x - WEAPON_SPAWNS[i].x, dz = player.z - WEAPON_SPAWNS[i].z;
+            if (dx * dx + dz * dz < 2.2) {
+              mk.downUntil = Date.now() + WEAPON_RESPAWN_MS;
+              player.w = WEAPON_SPAWNS[i].w;
+              broadcast(room, { t: 'weapon', i, id: player.id, w: player.w });
+              break;
+            }
+          }
+        }
         break;
       }
       case 'shoot': { // tracer/sound relay — capped & validated (broadcast amplification)
@@ -195,7 +225,7 @@ wss.on('connection', (ws) => {
         const vec3 = a => Array.isArray(a) && a.length === 3 && a.every(Number.isFinite);
         if (!vec3(msg.o) || !vec3(msg.d)) break;
         player.lastShootMsg = now;
-        broadcast(room, { t: 'shoot', id: player.id, o: msg.o, d: msg.d }, player.id);
+        broadcast(room, { t: 'shoot', id: player.id, o: msg.o, d: msg.d, w: player.w }, player.id);
         break;
       }
       case 'hit': {
@@ -205,14 +235,15 @@ wss.on('connection', (ws) => {
         if (!target || target.dead || player.dead) break;
         if (target.team === player.team) break; // no friendly fire
         if (now < target.protUntil) break;
-        // server-side range check: RANGE 34 + slack for movement since last state
+        const wpn = WEAPONS[player.w] || WEAPONS[0]; // authoritative — server ignores msg.w, trusts only what it handed out
+        // server-side range check: wpn.range + slack for movement since last state
         const dx = target.x - player.x, dz = target.z - player.z;
-        if (dx * dx + dz * dz > 40 * 40) break;
-        // leaky bucket: ~110ms average, absorbs 2-3 packet bursts from TCP jitter
-        const nextHit = Math.max(player.nextHit || 0, now - 240) + 110;
+        if (dx * dx + dz * dz > (wpn.range + RANGE_SLACK) * (wpn.range + RANGE_SLACK)) break;
+        // leaky bucket: ~fireMs average, absorbs 2-3 packet bursts from TCP jitter
+        const nextHit = Math.max(player.nextHit || 0, now - 240) + wpn.fireMs;
         if (nextHit > now + 240) break;
         player.nextHit = nextHit;
-        target.hp -= HIT_DMG;
+        target.hp -= wpn.dmg;
         if (target.hp <= 0) {
           target.hp = 0; target.dead = true;
           target.deaths++; player.kills++;
@@ -224,6 +255,7 @@ wss.on('connection', (ws) => {
             const [sx, sy, sz] = pickSpawn(room, target, target.team);
             target.hp = MAX_HP; target.dead = false;
             target.protUntil = Date.now() + SPAWN_PROT_MS;
+            target.w = 0;
             target.x = sx; target.y = sy; target.z = sz;
             target.ignoreStateUntil = Date.now() + 300; // drop stale pre-respawn echoes
             broadcast(room, { t: 'respawn', id: target.id, spawn: [sx, sy, sz] });
@@ -264,9 +296,11 @@ setInterval(() => {
         room.breakUntil = 0;
         room.roundEndsAt = now + ROUND_MS;
         for (const m of room.medkits) m.downUntil = 0;
+        for (const m of room.weapons) m.downUntil = 0;
         for (const p of room.players.values()) {
           p.kills = 0; p.deaths = 0; p.hp = MAX_HP; p.dead = false; p.streak = 0;
           p.protUntil = now + SPAWN_PROT_MS;
+          p.w = 0;
           const [sx, sy, sz] = pickSpawn(room, p, p.team);
           p.x = sx; p.y = sy; p.z = sz;
           p.ignoreStateUntil = now + 300;
@@ -289,11 +323,16 @@ setInterval(() => {
       const mk = room.medkits[i];
       if (mk.downUntil && now >= mk.downUntil) { mk.downUntil = 0; broadcast(room, { t: 'medkitup', i }); }
     }
+    // weapon respawns
+    for (let i = 0; i < room.weapons.length; i++) {
+      const wk = room.weapons[i];
+      if (wk.downUntil && now >= wk.downUntil) { wk.downUntil = 0; broadcast(room, { t: 'weaponup', i }); }
+    }
     // state tick
     if (room.players.size > 0) {
       broadcast(room, {
         t: 'states', now,
-        players: [...room.players.values()].map(p => ({ id: p.id, x: p.x, y: p.y, z: p.z, ry: p.ry, rx: p.rx, hp: p.hp, dead: p.dead, kills: p.kills, deaths: p.deaths })),
+        players: [...room.players.values()].map(p => ({ id: p.id, x: p.x, y: p.y, z: p.z, ry: p.ry, rx: p.rx, hp: p.hp, dead: p.dead, kills: p.kills, deaths: p.deaths, w: p.w })),
       });
     }
   }

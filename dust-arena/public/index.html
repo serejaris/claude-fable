@@ -124,7 +124,18 @@ const shotBlockers = MAP.boxes
 
 // ---------- player physics ----------
 const P = { r: 0.4, h: 1.8, speed: 7.2, walk: 3.4, jump: 7.5, grav: 21, chest: 1.2 };
-const RANGE = 34; // hitscan range cap (Brawl-Stars rule: no cross-map shots)
+
+// ---------- weapons (client mirror of server.js WEAPONS — id = index, 0 = rifle default) ----------
+const WEAPONS = [
+  { name: 'RIFLE',   mag: 30,  fireMs: 110,  range: 40, sndRate: 1.0,  sndVol: 0.25, spreadMul: 1.0, color: 0xffce54 },
+  { name: 'SMG',     mag: 40,  fireMs: 70,   range: 30, sndRate: 1.25, sndVol: 0.18, spreadMul: 1.3, color: 0x4fd0e0 },
+  { name: 'DEAGLE',  mag: 7,   fireMs: 350,  range: 36, sndRate: 0.8,  sndVol: 0.4,  spreadMul: 1.8, color: 0xd8d8d8 },
+  { name: 'SHOTGUN', mag: 6,   fireMs: 650,  range: 14, sndRate: 0.55, sndVol: 0.5,  spreadMul: 2.2, color: 0xff8a3a },
+  { name: 'AWP',     mag: 5,   fireMs: 1500, range: 62, sndRate: 0.45, sndVol: 0.55, spreadMul: 0.4, color: 0x7CFC00 },
+  { name: 'LMG',     mag: 100, fireMs: 90,   range: 38, sndRate: 1.1,  sndVol: 0.3,  spreadMul: 1.4, color: 0xff5544 },
+];
+let myW = 0; const curW = () => WEAPONS[myW];
+let curRange = WEAPONS[0].range; // hitscan range cap (Brawl-Stars rule: no cross-map shots) — varies by held weapon
 const pos = new THREE.Vector3(0, 0, 30);
 const vel = new THREE.Vector3();
 let yaw = 0, onGround = false;
@@ -223,11 +234,16 @@ function buildMe() {
 
 // ---------- aim ring + aim line ----------
 const ring = new THREE.Mesh(
-  new THREE.RingGeometry(RANGE - 0.5, RANGE, 64).rotateX(-Math.PI / 2),
+  new THREE.RingGeometry(curRange - 0.5, curRange, 64).rotateX(-Math.PI / 2),
   new THREE.MeshBasicMaterial({ color: 0xffe9a0, transparent: true, opacity: 0.10, depthWrite: false })
 );
 ring.visible = false;
 scene.add(ring);
+// weapon switch changes the range, so the ring's radius must be rebuilt (geometry isn't resizable in place)
+function rebuildRing() {
+  ring.geometry.dispose();
+  ring.geometry = new THREE.RingGeometry(curRange - 0.5, curRange, 64).rotateX(-Math.PI / 2);
+}
 const aimGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
 const aimLine = new THREE.Line(aimGeo, new THREE.LineBasicMaterial({ color: 0xffe9a0, transparent: true, opacity: 0.3, depthWrite: false }));
 aimLine.visible = false;
@@ -336,6 +352,29 @@ function buildMedkits(states) {
   });
 }
 
+// ---------- weapon spawns ----------
+const WEAPON_SPAWNS = MAP.weaponSpawns || []; // [{x,z,w}] — same source as server
+const weaponMeshes = [];
+function buildWeaponSpawns(states) {
+  if (weaponMeshes.length) { // reconnect: just sync visibility
+    states.forEach((s, i) => { if (weaponMeshes[i]) weaponMeshes[i].visible = s !== 0; });
+    return;
+  }
+  WEAPON_SPAWNS.forEach((s, i) => {
+    const g = new THREE.Group();
+    const base = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.35, 0.7), new THREE.MeshLambertMaterial({ color: 0x3a3528 }));
+    base.position.y = 0.5;
+    const accent = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.16, 0.5), new THREE.MeshLambertMaterial({ color: WEAPONS[s.w].color }));
+    accent.position.y = 0.78;
+    g.add(base, accent);
+    g.position.set(s.x, 0, s.z);
+    g.userData.baseY = 0;
+    g.visible = states[i] !== 0;
+    scene.add(g);
+    weaponMeshes.push(g);
+  });
+}
+
 // ---------- audio ----------
 const AC = new (window.AudioContext || window.webkitAudioContext)();
 const master = AC.createGain();
@@ -383,8 +422,8 @@ function healSound() {
   const g = AC.createGain(); g.gain.setValueAtTime(0.12, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
   o.connect(g).connect(master); o.start(); o.stop(t + 0.3);
 }
-function shotSound(vol = 0.25, pan = 0) {
-  if (play('shot', Math.min(1, vol * 2.6), pan, 0.94 + Math.random() * 0.12)) return;
+function shotSound(vol = 0.25, pan = 0, rate = 1) {
+  if (play('shot', Math.min(1, vol * 2.6), pan, (0.94 + Math.random() * 0.12) * rate)) return;
   const t = AC.currentTime;
   const buf = AC.createBuffer(1, 2205, 44100);
   const d = buf.getChannelData(0);
@@ -473,6 +512,7 @@ function onMsg(m) {
         else { myColor = p.color; myTeam = p.team || 0; buildMe(); }
       }
       buildMedkits(m.medkits || []);
+      buildWeaponSpawns(m.weapons || []);
       snapCamera();
       break;
     case 'pong':
@@ -484,6 +524,17 @@ function onMsg(m) {
       break;
     case 'medkitup':
       if (medkitMeshes[m.i]) medkitMeshes[m.i].visible = true;
+      break;
+    case 'weapon':
+      if (weaponMeshes[m.i]) weaponMeshes[m.i].visible = false;
+      if (m.id === myId) {
+        myW = m.w; curRange = curW().range; rebuildRing();
+        ammo = curW().mag;
+        if (!play('medkit', 0.6)) blip(); // reuse pickup sfx — no dedicated weapon-pickup sound yet
+      }
+      break;
+    case 'weaponup':
+      if (weaponMeshes[m.i]) weaponMeshes[m.i].visible = true;
       break;
     case 'joined': makeRemote(m.player); feed(`${m.player.name} joined`); break;
     case 'left': { const r = remotes.get(m.id); if (r) feed(`${r.name} left`); removeRemote(m.id); break; }
@@ -671,17 +722,18 @@ function baseSpread() {
 addEventListener('mousedown', e => { if (e.button === 0 && ws && $('join').style.display === 'none') firing = true; });
 addEventListener('mouseup', e => { if (e.button === 0) firing = false; });
 function reload() {
-  if (reloading || ammo === 30 || dead) return;
+  if (reloading || ammo === curW().mag || dead) return;
   reloading = true;
   $('ammo').textContent = 'RELOADING';
   if (!play('reload', 0.7)) { shotSound(0.05); setTimeout(() => shotSound(0.06), 1300); } // mag out / mag in
-  reloadT = setTimeout(() => { ammo = 30; reloading = false; }, 2000);
+  reloadT = setTimeout(() => { ammo = curW().mag; reloading = false; }, 2000);
 }
-function resetGun() { // death mid-reload must not carry over to the next life
+function resetGun() { // death mid-reload must not carry over to the next life; also rolls weapon back to rifle
   clearTimeout(reloadT);
-  ammo = 30; reloading = false; firing = false; spread = 0;
+  myW = 0; curRange = WEAPONS[0].range; rebuildRing();
+  ammo = WEAPONS[0].mag; reloading = false; firing = false; spread = 0;
 }
-function tracer(origin, dir, len = RANGE) {
+function tracer(origin, dir, len = curRange) {
   const geo = new THREE.BufferGeometry().setFromPoints([origin, origin.clone().addScaledVector(dir, len)]);
   const line = new THREE.Line(geo, new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.75 }));
   scene.add(line);
@@ -706,29 +758,29 @@ function nearestWallT(ox, oz, dx, dz) {
 function shoot(now) {
   if (dead || frozen || reloading || ammo <= 0 || SPECTATE) return;
   if (!ws || ws.readyState !== 1) return;
-  if (now - lastShot < 120) return;
+  if (now - lastShot < curW().fireMs) return;
   lastShot = now; ammo--;
   if (ammo === 0) reload();
   spread = Math.min(Math.max(spread, baseSpread()) + 0.007, 0.05);
   // pure top-down hitscan: everything resolves on the XZ plane, height is irrelevant
   const ox = pos.x, oz = pos.z;
-  const ang = yaw + (Math.random() - 0.5) * spread * 2;
+  const ang = yaw + (Math.random() - 0.5) * spread * 2 * curW().spreadMul;
   const nx = -Math.sin(ang), nz = -Math.cos(ang);      // forward unit (matches yaw)
   const wallT = nearestWallT(ox, oz, nx, nz);
-  let hitId = 0, fdx = nx, fdz = nz, flen = Math.min(wallT, RANGE);
+  let hitId = 0, fdx = nx, fdz = nz, flen = Math.min(wallT, curRange);
 
   // aim-assist: cursor locked on an enemy → hit them if in range with clear 2D line of sight
   const lock = aimTargetPid ? remotes.get(aimTargetPid) : null;
   if (lock && !lock.dead && lock.team !== myTeam) {
     const ex = lock.group.position.x - ox, ez = lock.group.position.z - oz;
     const d = Math.hypot(ex, ez);
-    if (d > 0.01 && d <= RANGE && nearestWallT(ox, oz, ex / d, ez / d) >= d) {
+    if (d > 0.01 && d <= curRange && nearestWallT(ox, oz, ex / d, ez / d) >= d) {
       hitId = aimTargetPid; fdx = ex / d; fdz = ez / d; flen = d;
     }
   }
   // otherwise: nearest enemy whose 2D centre falls within the bullet corridor, before any wall
   if (!hitId) {
-    const HIT_R = 0.75, reach = Math.min(wallT, RANGE);
+    const HIT_R = 0.75, reach = Math.min(wallT, curRange);
     let bestAlong = reach;
     for (const [id, r] of remotes) {
       if (r.dead || r.team === myTeam) continue;
@@ -742,8 +794,8 @@ function shoot(now) {
   }
 
   if (hitId) {
-    ws.send(JSON.stringify({ t: 'hit', target: hitId }));
-  } else if (wallT < RANGE) {
+    ws.send(JSON.stringify({ t: 'hit', target: hitId, w: myW })); // w is cosmetic only — server trusts player.w
+  } else if (wallT < curRange) {
     const m = new THREE.Mesh(partGeo, new THREE.MeshBasicMaterial({ color: 0xd9c79a }));
     m.position.set(ox + nx * wallT, pos.y + P.chest, oz + nz * wallT); m.scale.setScalar(1.8);
     scene.add(m);
@@ -751,9 +803,9 @@ function shoot(now) {
   }
   const origin = new THREE.Vector3(ox, pos.y + P.chest, oz);
   const flatDir = new THREE.Vector3(fdx, 0, fdz);
-  ws.send(JSON.stringify({ t: 'shoot', o: origin.toArray(), d: flatDir.toArray() }));
+  ws.send(JSON.stringify({ t: 'shoot', o: origin.toArray(), d: flatDir.toArray(), w: myW }));
   tracer(origin.clone().addScaledVector(flatDir, 0.9), flatDir, Math.max(0, flen - 0.9));
-  shotSound();
+  shotSound(curW().sndVol, 0, curW().sndRate);
   myMuzzle.visible = true;
   clearTimeout(myMuzzle.userData.t);
   myMuzzle.userData.t = setTimeout(() => myMuzzle.visible = false, 45);
@@ -843,6 +895,11 @@ function tick(now) {
     mk.rotation.y += dt * 1.6;
     mk.position.y = mk.userData.baseY + 0.12 + Math.sin(now * 0.0035) * 0.1;
   }
+  for (const wm of weaponMeshes) {
+    if (!wm.visible) continue;
+    wm.rotation.y += dt * 1.6;
+    wm.position.y = wm.userData.baseY + 0.12 + Math.sin(now * 0.0035) * 0.1;
+  }
 
   // own avatar + aim widgets
   if (me) {
@@ -854,7 +911,7 @@ function tick(now) {
     const from = new THREE.Vector3(pos.x, pos.y + 1.1, pos.z);
     const to = new THREE.Vector3(aimPoint.x, pos.y + 1.1, aimPoint.z);
     const d = to.clone().sub(from);
-    if (d.length() > RANGE) to.copy(from).addScaledVector(d.normalize(), RANGE);
+    if (d.length() > curRange) to.copy(from).addScaledVector(d.normalize(), curRange);
     aimGeo.setFromPoints([from, to]);
     aimLine.material.opacity = firing ? 0.7 : 0.3;
     aimLine.visible = !dead && !SPECTATE;
@@ -912,7 +969,7 @@ function tick(now) {
   // HUD
   $('hp').textContent = '+' + Math.max(0, myHp);
   $('hp').style.color = myHp > 50 ? '#7CFC00' : myHp > 25 ? '#ffce54' : '#ff5544';
-  if (!reloading) $('ammo').textContent = ammo + ' / ∞';
+  if (!reloading) $('ammo').textContent = `${curW().name} ${ammo}/∞`;
   $('crosshair').style.fontSize = Math.round(16 + spread * 500) + 'px'; // dynamic: shows your accuracy
   const left = Math.max(0, roundEndsAt - (Date.now() + serverOffset));
   const tk = [0, 0]; tk[myTeam] += myKills; for (const r of remotes.values()) tk[r.team] += r.kills;
